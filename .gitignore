@@ -1,0 +1,14 @@
+*
+!/**/
+!*.*
+
+*.so
+*.o
+*.svg
+*.txt
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.pdf
+*.gz
