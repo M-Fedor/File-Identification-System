@@ -55,30 +55,37 @@ int Scanner::findNextFDRec()
         }
         else if (dirContent->d_type == DT_DIR)
         {
-            std::string path = absolutePaths.back().append(dirContent->d_name);
-            DIR *dirStream = opendir(path.data());
+            if (strcmp(dirContent->d_name, ".") != 0 && strcmp(dirContent->d_name, "..") != 0)
+            {
+                std::string path = absolutePaths.back();
+                DIR *dirStream = opendir(path.append(dirContent->d_name).append("/").data());
 
-            if (dirStream != NULL)
-            {
-                directoryStreams.push_back(dirStream);
-                absolutePaths.push_back(path);
-                int fd = findNextFDRec();
-                return fd;
-            }
-            else
-            {
-                int temp_errno = errno;
-                printf("\033[31mFAILED\033[0m to open directory\033[1m %s\033[0m\n", path.data());
-                perror(strerror(temp_errno));
+                if (dirStream != NULL)
+                {
+                    printf("\033[32mSUCCESSFUL\033[0m to open directory\033[1m %s\033[0m\n", path.data());
+                    directoryStreams.push_back(dirStream);
+                    absolutePaths.push_back(path);
+                    int fd = findNextFDRec();
+                    return fd;
+                }
+                else
+                {
+                    int temp_errno = errno;
+                    printf("\033[31mFAILED\033[0m to open directory\033[1m %s\033[0m\n", path.data());
+                    perror(strerror(temp_errno));
+                }
             }
         }
         else
         {
-            std::string path = absolutePaths.back().append(dirContent->d_name);
-            int fd = open(path.data(), O_RDONLY);
+            std::string path = absolutePaths.back();
+            int fd = open(path.append(dirContent->d_name).data(), O_RDONLY);
 
             if (fd != -1)
+            {
+                printf("\033[32mSUCCESSFUL\033[0m to open file\033[1m %s\033[0m\n", path.data());
                 return fd;
+            }
             else
             {
                 int temp_errno = errno;
@@ -123,9 +130,11 @@ int Scanner::init()
         return -1;
 
     DIR *dirStream = NULL;
+    std::string path;
     do
     {
-        dirStream = opendir(rootDirectories.back().data());
+        path = rootDirectories.back().append("/");
+        dirStream = opendir(path.data());
 
         if (dirStream == NULL)
         {
@@ -140,7 +149,7 @@ int Scanner::init()
     if (dirStream != NULL)
     {
         directoryStreams.push_back(dirStream);
-        absolutePaths.push_back(rootDirectories.back());
+        absolutePaths.push_back(path);
         return 0;
     }
     else

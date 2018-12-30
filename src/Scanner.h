@@ -16,11 +16,12 @@ public:
   Scanner(std::vector<std::string> rootDirectories);
   ~Scanner();
 
-  int findNextFDRec();
   int getNextFD();
   int init();
 
 private:
+  int findNextFDRec();
+
   std::vector<std::string> absolutePaths;
   std::vector<DIR *> directoryStreams;
   std::vector<std::string> rootDirectories;
