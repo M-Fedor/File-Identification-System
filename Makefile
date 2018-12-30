@@ -1,5 +1,5 @@
-CURRENTDIR=$(HOME)/git/System-File-Scanner/
-INSTDIR=$(HOME)/git/System-File-Scanner/build
+CURRENTDIR=$(HOME)/git/File-System-Scanner/
+INSTDIR=$(HOME)/git/File-System-Scanner/build
 
 testExec: src/testExec.cpp libscanner.so
 	gcc -o testExec src/testExec.cpp -L$(CURRENTDIR) -lscanner -lstdc++ -pedantic -Wall -Wextra
