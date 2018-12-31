@@ -2,7 +2,7 @@ CURRENTDIR=$(HOME)/git/File-System-Scanner/
 INSTDIR=$(HOME)/git/File-System-Scanner/build
 
 testExec: src/testExec.cpp libscanner.so libsha2.so
-	gcc -o testExec src/testExec.cpp -L$(CURRENTDIR) -lscanner -lstdc++ -pedantic -Wall -Wextra
+	gcc -o testExec src/testExec.cpp -L$(CURRENTDIR) -lsha2 -lscanner -lhashAlgorithm -lcryptopp -lpthread -lstdc++ -pedantic -Wall -Wextra
 
 libscanner.so: scanner.o
 	gcc -shared -o libscanner.so scanner.o -pedantic -Wall -Wextra
@@ -20,7 +20,7 @@ hashAlgorithm.o: src/HashAlgorithm.cpp
 	gcc -c -fPIC -o hashAlgorithm.o src/HashAlgorithm.cpp -lstdc++ -pedantic -Wall -Wextra
 
 sha2.o: src/SHA2.cpp libhashAlgorithm.so
-	gcc -c -fPIC -o sha2.o src/SHA2.cpp -L$(CURRENTDIR) -lhashAlgorithm -lstdc++ -pedantic -Wall -Wextra
+	gcc -c -fPIC -o sha2.o src/SHA2.cpp -L$(CURRENTDIR) -lhashAlgorithm -lcryptopp -lstdc++ -pedantic -Wall -Wextra
 
 PHONY: clean install
 clean: 
