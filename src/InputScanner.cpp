@@ -106,25 +106,6 @@ int InputScanner::findNextFDRec(std::string &pathName)
     return -2;
 }
 
-int InputScanner::getNextFD(std::string &pathName)
-{
-    int fd = -3;
-    do
-        fd = findNextFDRec(pathName);
-    while (fd == -2);
-
-    while (fd == -1)
-    {
-        if (init() == -1)
-            break;
-        do
-            fd = findNextFDRec(pathName);
-        while (fd == -2);
-    }
-
-    return fd;
-}
-
 int InputScanner::init()
 {
     if (rootDirectories.size() == 0)
@@ -155,4 +136,23 @@ int InputScanner::init()
     }
     else
         return -1;
+}
+
+int InputScanner::inputNextFile(std::string &pathName)
+{
+    int fd = -3;
+    do
+        fd = findNextFDRec(pathName);
+    while (fd == -2);
+
+    while (fd == -1)
+    {
+        if (init() == -1)
+            break;
+        do
+            fd = findNextFDRec(pathName);
+        while (fd == -2);
+    }
+
+    return fd;
 }

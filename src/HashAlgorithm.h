@@ -1,7 +1,6 @@
 #ifndef HashAlgorithm_h
 #define HashAlgorithm_h
 
-#include <stdio.h>
 #include <string>
 
 class HashAlgorithm

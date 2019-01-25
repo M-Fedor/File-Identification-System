@@ -9,8 +9,8 @@ public:
   Input();
   virtual ~Input();
 
-  virtual int getNextFD(std::string &pathName);
   virtual int init();
+  virtual int inputNextFile(std::string &pathName);
 };
 
 #endif

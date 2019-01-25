@@ -2,13 +2,10 @@
 #define InputFile_h
 
 #define DIGEST_SIZE 64
-#define NAME_SIZE 100
+#define NAME_SIZE 300
 
 #include "Input.h"
 #include <cstring>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 class InputFile : public Input
 {
@@ -16,15 +13,14 @@ public:
   InputFile();
   ~InputFile();
 
-  std::string getNextDigest();
-  int getNextFD(std::string &pathName);
   int init();
+  std::string inputDigest();
+  int inputNextFile(std::string &pathName);
 
 private:
   char *fileDigest;
   char *fileName;
   FILE *fRead;
-  long int currentPos;
   std::string digest;
 };
 

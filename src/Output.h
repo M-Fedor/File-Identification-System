@@ -11,6 +11,9 @@ public:
 
   virtual int init();
   virtual int outputData(std::string digest, std::string name);
+
+protected:
+  FILE *fWrite;
 };
 
 #endif

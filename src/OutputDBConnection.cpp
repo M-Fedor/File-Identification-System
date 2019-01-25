@@ -22,7 +22,7 @@ OutputDBConnection::~OutputDBConnection()
     if (mysql_stmt_close(getDigestFileName))
     {
         printf("\033[31mFAILED\033[0m to close MySQL statement\n");
-        printf("Error(%d) [%s] \"%s\"", mysql_errno(mysql),
+        printf("Error(%d) [%s] \"%s\"\n", mysql_errno(mysql),
                mysql_sqlstate(mysql), mysql_error(mysql));
     }
 
@@ -45,19 +45,21 @@ int OutputDBConnection::init()
     if (!mysql_real_connect(mysql, hostName, userName, userPasswd, dbName, portNum, unixSocket, 0))
     {
         printf("\033[31mFAILED\033[0m to open MySQL connection\n");
-        printf("Error(%d) [%s] \"%s\"", mysql_errno(mysql),
+        printf("Error(%d) [%s] \"%s\"\n", mysql_errno(mysql),
                mysql_sqlstate(mysql), mysql_error(mysql));
         return 1;
     }
 
     getDigestFileName = mysql_stmt_init(mysql);
-    char *getDigestFileNameStr = strdup("(SELECT * FROM fileinfo WHERE file_digest = ?) UNION "
-                                        "(SELECT * FROM fileinfo WHERE file_name = ? AND file_digest != ?);");
+    char *getDigestFileNameStr = strdup("(SELECT file_name, file_created, file_changed, file_digest, file_version"
+                                        " FROM fileinfo WHERE file_digest = ?) UNION"
+                                        " (SELECT file_name, file_created, file_changed, file_digest, file_version"
+                                        " FROM fileinfo WHERE file_name = ? AND file_digest != ?)");
 
-    if (!mysql_stmt_prepare(getDigestFileName, getDigestFileNameStr, strlen(getDigestFileNameStr)))
+    if (mysql_stmt_prepare(getDigestFileName, getDigestFileNameStr, strlen(getDigestFileNameStr)))
     {
         printf("\033[31mFAILED\033[0m to prepare MySQL statement\n");
-        printf("Error(%d) [%s] \"%s\"", mysql_stmt_errno(getDigestFileName),
+        printf("Error(%d) [%s] \"%s\"\n", mysql_stmt_errno(getDigestFileName),
                mysql_stmt_sqlstate(getDigestFileName), mysql_stmt_error(getDigestFileName));
         return 1;
     }
@@ -129,7 +131,7 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
     if (mysql_stmt_bind_param(getDigestFileName, bind))
     {
         printf("\033[31mFAILED\033[0m to bind MySQL statement\n");
-        printf("Error(%d) [%s] \"%s\"", mysql_stmt_errno(getDigestFileName),
+        printf("Error(%d) [%s] \"%s\"\n", mysql_stmt_errno(getDigestFileName),
                mysql_stmt_sqlstate(getDigestFileName), mysql_stmt_error(getDigestFileName));
         return 1;
     }
@@ -137,7 +139,7 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
     if (mysql_stmt_execute(getDigestFileName))
     {
         printf("\033[31mFAILED\033[0m to execute MySQL statement\n");
-        printf("Error(%d) [%s] \"%s\"", mysql_stmt_errno(getDigestFileName),
+        printf("Error(%d) [%s] \"%s\"\n", mysql_stmt_errno(getDigestFileName),
                mysql_stmt_sqlstate(getDigestFileName), mysql_stmt_error(getDigestFileName));
         return 1;
     }
@@ -145,8 +147,8 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
     setBind(bind[0], MYSQL_TYPE_STRING, fileName, NAME_SIZE, &paramLen[0], isNull[0], error[0], noneInd);
     setBind(bind[1], MYSQL_TYPE_TIMESTAMP, &fileCreated, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[1], isNull[1], error[1], noneInd);
     setBind(bind[2], MYSQL_TYPE_TIMESTAMP, &fileChanged, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[2], isNull[2], error[2], noneInd);
-    setBind(bind[3], MYSQL_TYPE_STRING, &fileDigest, DIGEST_SIZE, &paramLen[3], isNull[3], error[3], noneInd);
-    setBind(bind[4], MYSQL_TYPE_STRING, &fileVersion, VERSION_SIZE, &paramLen[4], isNull[4], error[4], noneInd);
+    setBind(bind[3], MYSQL_TYPE_STRING, fileDigest, DIGEST_SIZE, &paramLen[3], isNull[3], error[3], noneInd);
+    setBind(bind[4], MYSQL_TYPE_STRING, fileVersion, VERSION_SIZE, &paramLen[4], isNull[4], error[4], noneInd);
 
     if (mysql_stmt_bind_result(getDigestFileName, bind))
     {
@@ -182,7 +184,7 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
         else
             fprintf(fWrite, "\tSUSPICIOS_FILE\n");
 
-        fprintf(fWrite, "\t\t%s, %02d.%02d.%04d %02d:%02d:%02d, %02d.%02d.%04d %02d:%02d:%02d, %s, %s",
+        fprintf(fWrite, "\t\t%s, %02d.%02d.%04d %02d:%02d:%02d, %02d.%02d.%04d %02d:%02d:%02d, %s, %s\n",
                 fileName, fileCreated.day, fileCreated.month, fileCreated.year, fileCreated.hour, fileCreated.minute, fileCreated.second,
                 fileChanged.day, fileChanged.month, fileChanged.year, fileChanged.hour, fileChanged.minute, fileChanged.second,
                 fileDigest, fileVersion);
@@ -193,7 +195,7 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
     if (rc == 1)
     {
         printf("\033[31mFAILED\033[0m to fetch MySQL statement results\n");
-        printf("Error(%d) [%s] \"%s\"", mysql_stmt_errno(getDigestFileName),
+        printf("Error(%d) [%s] \"%s\"\n", mysql_stmt_errno(getDigestFileName),
                mysql_stmt_sqlstate(getDigestFileName), mysql_stmt_error(getDigestFileName));
         return 1;
     }
@@ -205,8 +207,8 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
     }
 
     if (!foundResult)
-        fprintf(fWrite, "FILE_NOT_FOUND");
-    fprintf(fWrite, "\n\n");
+        fprintf(fWrite, "FILE_NOT_FOUND\n");
+    fprintf(fWrite, "\n");
 
     return 0;
 }

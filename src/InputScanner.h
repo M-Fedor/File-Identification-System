@@ -16,8 +16,8 @@ public:
   InputScanner(std::vector<std::string> rootDirectories);
   ~InputScanner();
 
-  int getNextFD(std::string &pathName);
   int init();
+  int inputNextFile(std::string &pathName);
 
 private:
   int findNextFDRec(std::string &pathName);

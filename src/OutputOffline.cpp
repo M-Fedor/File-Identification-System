@@ -27,6 +27,6 @@ int OutputOffline::init()
 
 int OutputOffline::outputData(std::string digest, std::string name)
 {
-    fprintf(fWrite, "%s\n%s\n\n", name.data(), digest.data());
+    fprintf(fWrite, "%s\n%s\n", name.data(), digest.data());
     return 0;
 }

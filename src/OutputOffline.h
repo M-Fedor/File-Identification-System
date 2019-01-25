@@ -12,9 +12,6 @@ public:
 
   int init();
   int outputData(std::string digest, std::string name);
-
-private:
-  FILE *fWrite;
 };
 
 #endif

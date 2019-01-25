@@ -2,7 +2,7 @@
 #define OutputDBConnection_h
 
 #define DIGEST_SIZE 64
-#define NAME_SIZE 100
+#define NAME_SIZE 300
 #define VERSION_SIZE 200
 
 #include "Output.h"
@@ -34,7 +34,6 @@ private:
   char *unixSocket;
   char *userName;
   char *userPasswd;
-  FILE *fWrite;
   int bufferSizeCoefficient;
   MYSQL *mysql;
   MYSQL_BIND bind[5];
