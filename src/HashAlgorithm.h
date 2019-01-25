@@ -6,13 +6,13 @@
 
 class HashAlgorithm
 {
-  public:
-    HashAlgorithm();
-    ~HashAlgorithm();
+public:
+  HashAlgorithm();
+  virtual ~HashAlgorithm();
 
-    virtual void inputData(char *data, size_t dataLength);
-    virtual void inputDataPart(char *data, size_t dataLength);
-    virtual std::string hashData();
+  virtual void inputData(char *data, size_t dataLength);
+  virtual void inputDataPart(char *data, size_t dataLength);
+  virtual std::string hashData();
 };
 
 #endif

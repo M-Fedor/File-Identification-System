@@ -1,4 +1,5 @@
-#include "Scanner.h"
+#include "InputScanner.h"
+#include "Input.h"
 #include "SHA2.h"
 
 #include <unistd.h>
@@ -9,16 +10,17 @@ int main(int argc, char **argv)
 
     std::string path(argv[1]);
     std::string digest;
+    std::string pathName;
     char *buffer = new char[bufferSize];
     int fd = -2;
 
-    Scanner *scanner = new Scanner(path);
+    Input *inputScanner = new InputScanner(path);
     HashAlgorithm *hashAlg = new SHA2();
 
-    scanner->init();
+    inputScanner->init();
     do
     {
-        fd = scanner->getNextFD();
+        fd = inputScanner->getNextFD(pathName);
         printf("FileDescriptor: %d\n", fd);
         if (fd != -1)
         {
@@ -42,7 +44,7 @@ int main(int argc, char **argv)
     } while (fd != -1);
 
     delete[] buffer;
-    delete scanner;
+    delete inputScanner;
     delete hashAlg;
 
     return 0;
