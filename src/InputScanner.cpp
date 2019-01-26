@@ -1,16 +1,16 @@
-#include "Scanner.h"
+#include "InputScanner.h"
 
-Scanner::Scanner(std::string rootDirectory)
+InputScanner::InputScanner(std::string rootDirectory)
 {
     rootDirectories.push_back(rootDirectory);
 }
 
-Scanner::Scanner(std::vector<std::string> rootDirectories)
+InputScanner::InputScanner(std::vector<std::string> rootDirectories)
 {
-    this->rootDirectories = rootDirectories;
+    this->rootDirectories.assign(rootDirectories.begin(), rootDirectories.end());
 }
 
-Scanner::~Scanner()
+InputScanner::~InputScanner()
 {
     while (directoryStreams.size() != 0)
     {
@@ -26,7 +26,7 @@ Scanner::~Scanner()
     }
 }
 
-int Scanner::findNextFDRec()
+int InputScanner::findNextFDRec(std::string &pathName)
 {
     errno = 0;
     struct dirent *dirContent = readdir(directoryStreams.back());
@@ -47,7 +47,7 @@ int Scanner::findNextFDRec()
             absolutePaths.pop_back();
             if (directoryStreams.size() > 0)
             {
-                int fd = findNextFDRec();
+                int fd = findNextFDRec(pathName);
                 return fd;
             }
             else
@@ -65,7 +65,7 @@ int Scanner::findNextFDRec()
                     printf("\033[32mSUCCESSFUL\033[0m to open directory\033[1m %s\033[0m\n", path.data());
                     directoryStreams.push_back(dirStream);
                     absolutePaths.push_back(path);
-                    int fd = findNextFDRec();
+                    int fd = findNextFDRec(pathName);
                     return fd;
                 }
                 else
@@ -84,6 +84,7 @@ int Scanner::findNextFDRec()
             if (fd != -1)
             {
                 printf("\033[32mSUCCESSFUL\033[0m to open file\033[1m %s\033[0m\n", path.data());
+                pathName.assign(path);
                 return fd;
             }
             else
@@ -105,26 +106,7 @@ int Scanner::findNextFDRec()
     return -2;
 }
 
-int Scanner::getNextFD()
-{
-    int fd = -3;
-    do
-        fd = findNextFDRec();
-    while (fd == -2);
-
-    while (fd == -1)
-    {
-        if (init() == -1)
-            break;
-        do
-            fd = findNextFDRec();
-        while (fd == -2);
-    }
-
-    return fd;
-}
-
-int Scanner::init()
+int InputScanner::init()
 {
     if (rootDirectories.size() == 0)
         return -1;
@@ -154,4 +136,23 @@ int Scanner::init()
     }
     else
         return -1;
+}
+
+int InputScanner::inputNextFile(std::string &pathName)
+{
+    int fd = -3;
+    do
+        fd = findNextFDRec(pathName);
+    while (fd == -2);
+
+    while (fd == -1)
+    {
+        if (init() == -1)
+            break;
+        do
+            fd = findNextFDRec(pathName);
+        while (fd == -2);
+    }
+
+    return fd;
 }
