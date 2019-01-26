@@ -7,7 +7,7 @@ InputScanner::InputScanner(std::string rootDirectory)
 
 InputScanner::InputScanner(std::vector<std::string> rootDirectories)
 {
-    this->rootDirectories = rootDirectories;
+    this->rootDirectories.assign(rootDirectories.begin(), rootDirectories.end());
 }
 
 InputScanner::~InputScanner()
