@@ -1,7 +1,7 @@
 #ifndef OutputDBConnection_h
 #define OutputDBConnection_h
 
-#define DIGEST_SIZE 64
+#define DIGEST_SIZE 65
 #define NAME_SIZE 300
 #define VERSION_SIZE 200
 
@@ -30,6 +30,7 @@ private:
   char *fileDigest;
   char *fileName;
   char *fileVersion;
+  char *getDigestFileNameStr;
   char *hostName;
   char *unixSocket;
   char *userName;

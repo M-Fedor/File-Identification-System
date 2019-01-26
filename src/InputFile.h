@@ -1,7 +1,7 @@
 #ifndef InputFile_h
 #define InputFile_h
 
-#define DIGEST_SIZE 64
+#define DIGEST_SIZE 65
 #define NAME_SIZE 300
 
 #include "Input.h"

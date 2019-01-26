@@ -27,9 +27,11 @@ OutputDBConnection::~OutputDBConnection()
     }
 
     mysql_close(mysql);
+
     delete[] fileDigest;
     delete[] fileName;
     delete[] fileVersion;
+    free(getDigestFileNameStr);
 
     if (fclose(fWrite))
     {
@@ -51,10 +53,10 @@ int OutputDBConnection::init()
     }
 
     getDigestFileName = mysql_stmt_init(mysql);
-    char *getDigestFileNameStr = strdup("(SELECT file_name, file_created, file_changed, file_digest, file_version"
-                                        " FROM fileinfo WHERE file_digest = ?) UNION"
-                                        " (SELECT file_name, file_created, file_changed, file_digest, file_version"
-                                        " FROM fileinfo WHERE file_name = ? AND file_digest != ?)");
+    getDigestFileNameStr = strdup("(SELECT file_name, file_created, file_changed, file_digest, file_version"
+                                  " FROM fileinfo WHERE file_digest = ?) UNION"
+                                  " (SELECT file_name, file_created, file_changed, file_digest, file_version"
+                                  " FROM fileinfo WHERE file_name = ? AND file_digest != ?)");
 
     if (mysql_stmt_prepare(getDigestFileName, getDigestFileNameStr, strlen(getDigestFileNameStr)))
     {
@@ -143,6 +145,9 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
                mysql_stmt_sqlstate(getDigestFileName), mysql_stmt_error(getDigestFileName));
         return 1;
     }
+
+    for (int i = 0; i < 3; i++)
+        free(bind[i].buffer);
 
     setBind(bind[0], MYSQL_TYPE_STRING, fileName, NAME_SIZE, &paramLen[0], isNull[0], error[0], noneInd);
     setBind(bind[1], MYSQL_TYPE_TIMESTAMP, &fileCreated, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[1], isNull[1], error[1], noneInd);
