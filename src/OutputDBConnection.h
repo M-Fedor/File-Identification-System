@@ -41,6 +41,9 @@ private:
   MYSQL_STMT *getDigestFileName;
   MYSQL_TIME fileCreated;
   MYSQL_TIME fileChanged;
+  std::vector<my_bool> error;
+  std::vector<my_bool> isNull;
+  std::vector<size_t> paramLen;
   unsigned int portNum;
 };
 

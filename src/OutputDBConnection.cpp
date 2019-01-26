@@ -15,6 +15,10 @@ OutputDBConnection::OutputDBConnection(
     fileName = new char[NAME_SIZE];
     fileVersion = new char[VERSION_SIZE];
 
+    error = std::vector<my_bool>(5, 0);
+    isNull = std::vector<my_bool>(5, 0);
+    paramLen = std::vector<size_t>(5, 0);
+
     memset(&bind, 0, sizeof(MYSQL_BIND) * 5);
 }
 OutputDBConnection::~OutputDBConnection()
@@ -115,10 +119,8 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
     char ignoreInd = STMT_INDICATOR_IGNORE;
     char noneInd = STMT_INDICATOR_NONE;
     char ntsInd = STMT_INDICATOR_NTS;
-    std::vector<my_bool> isNull(5, 0);
-    std::vector<my_bool> error(5, 0);
-    std::vector<size_t> paramLen(5, 0);
 
+    isNull[0] = false;
     isNull[1] = true;
     paramLen[0] = strlen(digest.data());
     paramLen[1] = strlen(name.data());
