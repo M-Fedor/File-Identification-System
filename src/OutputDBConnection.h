@@ -10,6 +10,8 @@
 #include <mysql/mysql.h>
 #include <vector>
 
+/* Class implements communication with MariaDB/MySQL DBMS
+in order to determine output and outputs data in output file */
 class OutputDBConnection : public Output
 {
 public:

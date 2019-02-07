@@ -4,6 +4,8 @@
 #include "Output.h"
 #include <cstring>
 
+/* Class implements output of computed data, when no connection
+to DBMS is available */
 class OutputOffline : public Output
 {
 public:

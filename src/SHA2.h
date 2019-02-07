@@ -6,6 +6,7 @@
 #include <cryptopp/hex.h>
 #include <cryptopp/sha.h>
 
+/* Class implements file content hashing using SHA256 */
 class SHA2 : public HashAlgorithm
 {
 public:

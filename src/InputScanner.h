@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <vector>
 
+/* Class implements file-system recursive iterator */
 class InputScanner : public Input
 {
 public:
