@@ -1,5 +1,6 @@
 #include "OutputDBConnection.h"
 
+/* Constructor, set up the credentials for communication with DBMS */
 OutputDBConnection::OutputDBConnection(
     char *hostName, char *userName, char *userPasswd, char *dbName, unsigned int portNum, char *unixSocket)
     : bufferSizeCoefficient(1)
@@ -11,16 +12,20 @@ OutputDBConnection::OutputDBConnection(
     this->portNum = portNum;
     this->unixSocket = unixSocket;
 
+    // Allocate buffers for data from database
     fileDigest = new char[DIGEST_SIZE];
     fileName = new char[NAME_SIZE];
     fileVersion = new char[VERSION_SIZE];
 
+    // Initialize indicators for query execution
     error = std::vector<my_bool>(5, 0);
     isNull = std::vector<my_bool>(5, 0);
     paramLen = std::vector<size_t>(5, 0);
 
     memset(&bind, 0, sizeof(MYSQL_BIND) * 5);
 }
+
+/* Destructor */
 OutputDBConnection::~OutputDBConnection()
 {
     if (mysql_stmt_close(getDigestFileName))
@@ -45,6 +50,7 @@ OutputDBConnection::~OutputDBConnection()
     }
 }
 
+/* Initialize communication with DBMS, open output file and prepare statement to be executed, report any failures */
 int OutputDBConnection::init()
 {
     mysql = mysql_init(NULL);
@@ -82,6 +88,8 @@ int OutputDBConnection::init()
     return 0;
 }
 
+/* Resize buffers for data from database, allows us to adapt to various conditions
+and versions of our databases */
 void OutputDBConnection::resizeBuffers()
 {
     bufferSizeCoefficient *= 2;
@@ -93,6 +101,8 @@ void OutputDBConnection::resizeBuffers()
     fileVersion = new char[VERSION_SIZE * bufferSizeCoefficient];
 }
 
+/* Fill in parameters of bind structure used for definition of statement variables substitution
+or definition of query result set storage and indicators */
 void OutputDBConnection::setBind(
     MYSQL_BIND &bind, enum enum_field_types field_type, void *param, size_t paramSize,
     size_t *paramLen, my_bool &isNull, my_bool &error, char &ind)
@@ -113,6 +123,7 @@ void OutputDBConnection::setBind(
     }
 }
 
+/* Get data from database and output them in output file */
 int OutputDBConnection::outputData(std::string digest, std::string name)
 {
     bool foundResult = false;
@@ -120,15 +131,18 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
     char noneInd = STMT_INDICATOR_NONE;
     char ntsInd = STMT_INDICATOR_NTS;
 
+    // Only two of indicators are necessary for bind when substituting for statement variables (?)
     isNull[0] = false;
     isNull[1] = true;
     paramLen[0] = strlen(digest.data());
     paramLen[1] = strlen(name.data());
 
+    //Bind statement variables to their corresponding substitutions
     setBind(bind[0], MYSQL_TYPE_STRING, strdup(digest.data()), 0, &paramLen[0], isNull[0], error[0], ntsInd);
     setBind(bind[1], MYSQL_TYPE_STRING, strdup(name.data()), 0, &paramLen[1], isNull[0], error[0], ntsInd);
     setBind(bind[2], MYSQL_TYPE_STRING, strdup(digest.data()), 0, &paramLen[0], isNull[0], error[0], ntsInd);
 
+    // Ignore the rest of bind structures this time
     for (int i = 3; i < 5; i++)
         setBind(bind[i], MYSQL_TYPE_STRING, NULL, 0, NULL, isNull[1], error[0], ignoreInd);
 
@@ -151,6 +165,7 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
     for (int i = 0; i < 3; i++)
         free(bind[i].buffer);
 
+    // Bind corresponding storage to atributes of result set
     setBind(bind[0], MYSQL_TYPE_STRING, fileName, NAME_SIZE, &paramLen[0], isNull[0], error[0], noneInd);
     setBind(bind[1], MYSQL_TYPE_TIMESTAMP, &fileCreated, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[1], isNull[1], error[1], noneInd);
     setBind(bind[2], MYSQL_TYPE_TIMESTAMP, &fileChanged, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[2], isNull[2], error[2], noneInd);
@@ -165,6 +180,7 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
         return 1;
     }
 
+    // Fetch the entire result set at once
     if (mysql_stmt_store_result(getDigestFileName))
     {
         printf("\033[31mFAILED\033[0m to store MySQL statement results\n");
@@ -173,6 +189,7 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
         return 1;
     }
 
+    // Create formatted output
     fprintf(fWrite, "%s\n%s\n", name.data(), digest.data());
 
     int rc = mysql_stmt_fetch(getDigestFileName);

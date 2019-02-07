@@ -1,6 +1,9 @@
 #include "OutputOffline.h"
 
+/* Constructor */
 OutputOffline::OutputOffline() {}
+
+/* Destructor */
 OutputOffline::~OutputOffline()
 {
     if (fclose(fWrite))
@@ -11,6 +14,7 @@ OutputOffline::~OutputOffline()
     }
 }
 
+/* Open output file, report any failures */
 int OutputOffline::init()
 {
     fWrite = fopen("Offline_scan.txt", "w");
@@ -25,6 +29,7 @@ int OutputOffline::init()
     return 0;
 }
 
+/* Create formatted output */
 int OutputOffline::outputData(std::string digest, std::string name)
 {
     fprintf(fWrite, "%s\n%s\n", name.data(), digest.data());

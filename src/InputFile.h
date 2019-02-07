@@ -7,6 +7,9 @@
 #include "Input.h"
 #include <cstring>
 
+/* Class implements input from source file containing
+list of files represented by their absolute paths in file-system and 
+their corresponding precomputed unique identifiers */
 class InputFile : public Input
 {
 public:

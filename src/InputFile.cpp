@@ -1,11 +1,13 @@
 #include "InputFile.h"
 
+/* Constructor */
 InputFile::InputFile()
 {
     fileDigest = new char[DIGEST_SIZE];
     fileName = new char[NAME_SIZE];
 }
 
+/* Destructor */
 InputFile::~InputFile()
 {
     delete[] fileDigest;
@@ -19,6 +21,7 @@ InputFile::~InputFile()
     }
 }
 
+/* Initialize source file reader and report any failures */
 int InputFile::init()
 {
     fRead = fopen("Offline_scan.txt", "r");
@@ -33,11 +36,15 @@ int InputFile::init()
     return 0;
 }
 
+/* Return file's corresponding unique identifier */
 std::string InputFile::inputDigest()
 {
     return digest;
 }
 
+/* Load next file's credentials, fill absolute path of the file
+in pathName, set the digest value on corresponding file identifier,
+return -1 when no more files are in the list */
 int InputFile::inputNextFile(std::string &pathName)
 {
     if (feof(fRead))
