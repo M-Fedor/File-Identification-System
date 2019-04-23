@@ -1,6 +1,8 @@
 #ifndef Output_h
 #define Output_h
 
+#include <fstream>
+#include <iostream>
 #include <string>
 
 /* Interface for data output component */
@@ -17,7 +19,7 @@ public:
   virtual int outputData(std::string digest, std::string name);
 
 protected:
-  FILE *fWrite;
+  std::ofstream fOutput;
 };
 
 #endif

@@ -9,11 +9,12 @@
 
 int main(int argc, char **argv)
 {
+    std::ifstream fDescriptor;
     std::string path(argv[1]);
     std::string digest;
     std::string pathName;
     char *buffer = new char[BUFFER_SIZE];
-    int fd = -2;
+    int rc = -2;
 
     Input *inputScanner = new InputScanner(path);
     HashAlgorithm *hashAlg = new SHA2();
@@ -26,29 +27,32 @@ int main(int argc, char **argv)
 
     do
     {
-        fd = inputScanner->inputNextFile(pathName);
-        printf("FileDescriptor: %d\n", fd);
-        if (fd != -1)
+        rc = inputScanner->inputNextFile(fDescriptor, pathName);
+        std::cout << "Return code: " << rc << "\n";
+        if (rc != -1)
         {
-            while (read(fd, buffer, BUFFER_SIZE) != 0)
+            while (fDescriptor.good())
             {
+                fDescriptor.read(buffer, BUFFER_SIZE);
                 hashAlg->inputDataPart(buffer, BUFFER_SIZE);
             }
             digest = hashAlg->hashData();
-            printf("%s\n", digest.data());
-            lseek(fd, 0, SEEK_SET);
+            std::cout << digest.data() << "\n";
+            fDescriptor.clear(std::_S_goodbit);
+            fDescriptor.seekg(0);
 
-            while (read(fd, buffer, BUFFER_SIZE) != 0)
+            while (fDescriptor.good())
             {
+                fDescriptor.read(buffer, BUFFER_SIZE);
                 hashAlg->inputDataPart(buffer, BUFFER_SIZE);
             }
             digest = hashAlg->hashData();
-            printf("%s\n", digest.data());
-            close(fd);
+            std::cout << digest.data() << "\n";
+            fDescriptor.close();
 
             outputOffline->outputData(digest, pathName);
         }
-    } while (fd != -1);
+    } while (rc != -1);
 
     delete[] buffer;
     delete inputScanner;
@@ -70,13 +74,13 @@ int main(int argc, char **argv)
 
     do
     {
-        fd = inputFile->inputNextFile(pathName);
-        if (fd != -1)
+        rc = inputFile->inputNextFile(pathName);
+        if (rc != -1)
         {
             digest = inputFile->inputDigest();
             outputDB->outputData(digest, pathName);
         }
-    } while (fd != -1);
+    } while (rc != -1);
 
     free(host);
     free(user);

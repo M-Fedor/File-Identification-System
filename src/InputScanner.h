@@ -4,9 +4,6 @@
 #include "Input.h"
 #include <cstring>
 #include <dirent.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <vector>
 
 /* Class implements file-system recursive iterator */
@@ -18,10 +15,10 @@ public:
   ~InputScanner();
 
   int init();
-  int inputNextFile(std::string &pathName);
+  int inputNextFile(std::ifstream &fDescriptor, std::string &pathName);
 
 private:
-  int findNextFDRec(std::string &pathName);
+  int findNextFDRec(std::ifstream &fDescriptor, std::string &pathName);
 
   std::vector<std::string> absolutePaths;
   std::vector<DIR *> directoryStreams;

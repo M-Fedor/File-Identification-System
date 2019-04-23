@@ -1,6 +1,8 @@
 #ifndef Input_h
 #define Input_h
 
+#include <fstream>
+#include <iostream>
 #include <string>
 
 /* Interface for data input component */
@@ -15,7 +17,7 @@ public:
 
   /* Increment file-system iterator, return opened file descriptor
   and fill absolute path of the file in pathName */
-  virtual int inputNextFile(std::string &pathName);
+  virtual int inputNextFile(std::ifstream &fDescriptor, std::string &pathName);
 };
 
 #endif
