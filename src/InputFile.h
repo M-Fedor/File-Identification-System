@@ -5,7 +5,6 @@
 #define NAME_SIZE 300
 
 #include "Input.h"
-#include <cstring>
 
 /* Class implements input from source file containing
 list of files represented by their absolute paths in file-system and 
@@ -23,7 +22,7 @@ public:
 private:
   char *fileDigest;
   char *fileName;
-  FILE *fRead;
+  std::ifstream fInput;
   std::string digest;
 };
 

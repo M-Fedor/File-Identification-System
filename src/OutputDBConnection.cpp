@@ -30,9 +30,9 @@ OutputDBConnection::~OutputDBConnection()
 {
     if (mysql_stmt_close(getDigestFileName))
     {
-        printf("\033[31mFAILED\033[0m to close MySQL statement\n");
-        printf("Error(%d) [%s] \"%s\"\n", mysql_errno(mysql),
-               mysql_sqlstate(mysql), mysql_error(mysql));
+        std::cerr << "\033[31mFAILED\033[0m to close MySQL statement\n";
+        std::cerr << "Error(" << mysql_errno(mysql) << ") ["
+                  << mysql_sqlstate(mysql) << "] \"" << mysql_error(mysql) << "\"\n";
     }
 
     mysql_close(mysql);
@@ -42,12 +42,9 @@ OutputDBConnection::~OutputDBConnection()
     delete[] fileVersion;
     free(getDigestFileNameStr);
 
-    if (fclose(fWrite))
-    {
-        int temp_errno = errno;
-        printf("\033[31mFAILED\033[0m to close \033[1mValidation_results.txt\033[0m\n");
-        perror(strerror(temp_errno));
-    }
+    fOutput.close();
+    if (fOutput.fail())
+        std::cerr << "\033[31mFAILED\033[0m to close \033[1mValidation_results.txt\033[0m\n";
 }
 
 /* Initialize communication with DBMS, open output file and prepare statement to be executed, report any failures */
@@ -56,9 +53,9 @@ int OutputDBConnection::init()
     mysql = mysql_init(NULL);
     if (!mysql_real_connect(mysql, hostName, userName, userPasswd, dbName, portNum, unixSocket, 0))
     {
-        printf("\033[31mFAILED\033[0m to open MySQL connection\n");
-        printf("Error(%d) [%s] \"%s\"\n", mysql_errno(mysql),
-               mysql_sqlstate(mysql), mysql_error(mysql));
+        std::cerr << "\033[31mFAILED\033[0m to open MySQL connection\n";
+        std::cerr << "Error(" << mysql_errno(mysql) << ") ["
+                  << mysql_sqlstate(mysql) << "] \"" << mysql_error(mysql) << "\"\n";
         return 1;
     }
 
@@ -70,18 +67,16 @@ int OutputDBConnection::init()
 
     if (mysql_stmt_prepare(getDigestFileName, getDigestFileNameStr, strlen(getDigestFileNameStr)))
     {
-        printf("\033[31mFAILED\033[0m to prepare MySQL statement\n");
-        printf("Error(%d) [%s] \"%s\"\n", mysql_stmt_errno(getDigestFileName),
-               mysql_stmt_sqlstate(getDigestFileName), mysql_stmt_error(getDigestFileName));
+        std::cerr << "\033[31mFAILED\033[0m to prepare MySQL statement\n";
+        std::cerr << "Error(" << mysql_errno(mysql) << ") ["
+                  << mysql_sqlstate(mysql) << "] \"" << mysql_error(mysql) << "\"\n";
         return 1;
     }
 
-    fWrite = fopen("Validation_results.txt", "w");
-    if (!fWrite)
+    fOutput.open("Validation_results.txt", std::ios::trunc);
+    if (fOutput.fail())
     {
-        int temp_errno = errno;
-        printf("\033[31mFAILED\033[0m to open \033[1mValidation_results.txt\033[0m\n");
-        perror(strerror(temp_errno));
+        std::cerr << "\033[31mFAILED\033[0m to open \033[1mValidation_results.txt\033[0m\n";
         return 1;
     }
 
@@ -148,17 +143,17 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
 
     if (mysql_stmt_bind_param(getDigestFileName, bind))
     {
-        printf("\033[31mFAILED\033[0m to bind MySQL statement\n");
-        printf("Error(%d) [%s] \"%s\"\n", mysql_stmt_errno(getDigestFileName),
-               mysql_stmt_sqlstate(getDigestFileName), mysql_stmt_error(getDigestFileName));
+        std::cerr << "\033[31mFAILED\033[0m to bind MySQL statement\n";
+        std::cerr << "Error(" << mysql_errno(mysql) << ") ["
+                  << mysql_sqlstate(mysql) << "] \"" << mysql_error(mysql) << "\"\n";
         return 1;
     }
 
     if (mysql_stmt_execute(getDigestFileName))
     {
-        printf("\033[31mFAILED\033[0m to execute MySQL statement\n");
-        printf("Error(%d) [%s] \"%s\"\n", mysql_stmt_errno(getDigestFileName),
-               mysql_stmt_sqlstate(getDigestFileName), mysql_stmt_error(getDigestFileName));
+        std::cerr << "\033[31mFAILED\033[0m to execute MySQL statement\n";
+        std::cerr << "Error(" << mysql_errno(mysql) << ") ["
+                  << mysql_sqlstate(mysql) << "] \"" << mysql_error(mysql) << "\"\n";
         return 1;
     }
 
@@ -174,23 +169,24 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
 
     if (mysql_stmt_bind_result(getDigestFileName, bind))
     {
-        printf("\033[31mFAILED\033[0m to bind MySQL statement results\n");
-        printf("Error(%d) [%s] \"%s\"", mysql_stmt_errno(getDigestFileName),
-               mysql_stmt_sqlstate(getDigestFileName), mysql_stmt_error(getDigestFileName));
+        std::cerr << "\033[31mFAILED\033[0m to bind MySQL statement results\n";
+        std::cerr << "Error(" << mysql_errno(mysql) << ") ["
+                  << mysql_sqlstate(mysql) << "] \"" << mysql_error(mysql) << "\"\n";
         return 1;
     }
 
     // Fetch the entire result set at once
     if (mysql_stmt_store_result(getDigestFileName))
     {
-        printf("\033[31mFAILED\033[0m to store MySQL statement results\n");
-        printf("Error(%d) [%s] \"%s\"", mysql_stmt_errno(getDigestFileName),
-               mysql_stmt_sqlstate(getDigestFileName), mysql_stmt_error(getDigestFileName));
+        std::cerr << "\033[31mFAILED\033[0m to store MySQL statement results\n";
+        std::cerr << "Error(" << mysql_errno(mysql) << ") ["
+                  << mysql_sqlstate(mysql) << "] \"" << mysql_error(mysql) << "\"\n";
         return 1;
     }
 
     // Create formatted output
-    fprintf(fWrite, "%s\n%s\n", name.data(), digest.data());
+    fOutput << name.data() << "\n"
+            << digest.data() << "\n";
 
     int rc = mysql_stmt_fetch(getDigestFileName);
     while (!rc)
@@ -201,38 +197,39 @@ int OutputDBConnection::outputData(std::string digest, std::string name)
         if (!strcmp(fileDigest, digest.data()))
         {
             if (!strcmp(fileName, name.data()))
-                fprintf(fWrite, "\tVALID_FILE\n");
+                fOutput << "\tVALID_FILE\n";
             else
-                fprintf(fWrite, "\tDIFFERENT_FILE_NAME_OR_FILE_LOCATION\n");
+                fOutput << "\tDIFFERENT_FILE_NAME_OR_FILE_LOCATION\n";
         }
         else
-            fprintf(fWrite, "\tSUSPICIOS_FILE\n");
+            fOutput << "\tSUSPICIOS_FILE\n";
 
-        fprintf(fWrite, "\t\t%s, %02d.%02d.%04d %02d:%02d:%02d, %02d.%02d.%04d %02d:%02d:%02d, %s, %s\n",
-                fileName, fileCreated.day, fileCreated.month, fileCreated.year, fileCreated.hour, fileCreated.minute, fileCreated.second,
-                fileChanged.day, fileChanged.month, fileChanged.year, fileChanged.hour, fileChanged.minute, fileChanged.second,
-                fileDigest, fileVersion);
+        fOutput << "\t\t" << fileName << ", " << fileCreated.day << "." << fileCreated.month << "."
+                << fileCreated.year << " " << fileCreated.hour << ":" << fileCreated.minute << ":"
+                << fileCreated.second << ", " << fileChanged.day << "." << fileChanged.month << "."
+                << fileChanged.year << " " << fileChanged.hour << ":" << fileChanged.minute << ":"
+                << fileChanged.second << ", " << fileDigest << ", " << fileVersion << "\n";
 
         rc = mysql_stmt_fetch(getDigestFileName);
     }
 
     if (rc == 1)
     {
-        printf("\033[31mFAILED\033[0m to fetch MySQL statement results\n");
-        printf("Error(%d) [%s] \"%s\"\n", mysql_stmt_errno(getDigestFileName),
-               mysql_stmt_sqlstate(getDigestFileName), mysql_stmt_error(getDigestFileName));
+        std::cerr << "\033[31mFAILED\033[0m to fetch MySQL statement results\n";
+        std::cerr << "Error(" << mysql_errno(mysql) << ") ["
+                  << mysql_sqlstate(mysql) << "] \"" << mysql_error(mysql) << "\"\n";
         return 1;
     }
     else if (rc == MYSQL_DATA_TRUNCATED)
     {
-        printf("\033[33mWARNING:\033[0m data truncated, resizing buffers...\n");
+        std::cout << "\033[33mWARNING:\033[0m data truncated, resizing buffers...\n";
         resizeBuffers();
         return 2;
     }
 
     if (!foundResult)
-        fprintf(fWrite, "FILE_NOT_FOUND\n");
-    fprintf(fWrite, "\n");
+        fOutput << "FILE_NOT_FOUND\n";
+    fOutput << "\n";
 
     return 0;
 }

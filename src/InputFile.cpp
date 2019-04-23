@@ -13,23 +13,21 @@ InputFile::~InputFile()
     delete[] fileDigest;
     delete[] fileName;
 
-    if (fclose(fRead))
-    {
-        int temp_errno = errno;
-        printf("\033[31mFAILED\033[0m to close \033[1mOffline_scan.txt\033[0m\n");
-        perror(strerror(temp_errno));
-    }
+    fInput.setstate(std::_S_goodbit);
+    fInput.close();
+    if (fInput.fail())
+        std::cerr << "\033[31mFAILED\033[0m to close"
+                     " \033[1mOffline_scan.txt\033[0m\n";
 }
 
 /* Initialize source file reader and report any failures */
 int InputFile::init()
 {
-    fRead = fopen("Offline_scan.txt", "r");
-    if (!fRead)
+    fInput.open("Offline_scan.txt");
+    if (fInput.fail())
     {
-        int temp_errno = errno;
-        printf("\033[31mFAILED\033[0m to open \033[1mOffline_scan.txt\033[0m\n");
-        perror(strerror(temp_errno));
+        std::cerr << "\033[31mFAILED\033[0m to open"
+                     " \033[1mOffline_scan.txt\033[0m\n";
         return 1;
     }
 
@@ -37,29 +35,24 @@ int InputFile::init()
 }
 
 /* Return file's corresponding unique identifier */
-std::string InputFile::inputDigest()
-{
-    return digest;
-}
+std::string InputFile::inputDigest() { return digest; }
 
 /* Load next file's credentials, fill absolute path of the file
 in pathName, set the digest value on corresponding file identifier,
 return -1 when no more files are in the list */
 int InputFile::inputNextFile(std::string &pathName)
 {
-    if (feof(fRead))
+    if (fInput.peek() == EOF)
         return -1;
 
-    fscanf(fRead, "%255[^\n]\n", fileName);
+    fInput.getline(fileName, NAME_SIZE);
     pathName.assign(fileName);
 
-    if (feof(fRead))
-        digest.clear();
-    else
-    {
-        fscanf(fRead, "%255[^\n]\n", fileDigest);
-        digest.assign(fileDigest);
-    }
+    while (fInput.peek() == '\n')
+        pathName.push_back(fInput.get());
+
+    fInput.getline(fileDigest, DIGEST_SIZE);
+    digest.assign(fileDigest);
 
     return 0;
 }
