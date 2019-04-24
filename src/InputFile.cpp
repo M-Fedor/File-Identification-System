@@ -1,33 +1,35 @@
 #include "InputFile.h"
 
 /* Constructor */
-InputFile::InputFile()
+InputFile::InputFile(char *name)
 {
     fileDigest = new char[DIGEST_SIZE];
     fileName = new char[NAME_SIZE];
+    srcFileName = name;
 }
 
 /* Destructor */
 InputFile::~InputFile()
 {
-    delete[] fileDigest;
-    delete[] fileName;
-
-    fInput.setstate(std::_S_goodbit);
+    fInput.clear(std::_S_goodbit);
     fInput.close();
     if (fInput.fail())
-        std::cerr << "\033[31mFAILED\033[0m to close"
-                     " \033[1mOffline_scan.txt\033[0m\n";
+        std::cerr << "\033[31mFAILED\033[0m to close \033[1m"
+                  << srcFileName << "\033[0m\n";
+
+    delete[] fileDigest;
+    delete[] fileName;
+    free(srcFileName);
 }
 
 /* Initialize source file reader and report any failures */
 int InputFile::init()
 {
-    fInput.open("Offline_scan.txt");
+    fInput.open(srcFileName);
     if (fInput.fail())
     {
-        std::cerr << "\033[31mFAILED\033[0m to open"
-                     " \033[1mOffline_scan.txt\033[0m\n";
+        std::cerr << "\033[31mFAILED\033[0m to open \033[1m"
+                  << srcFileName << "\033[0m\n";
         return 1;
     }
 

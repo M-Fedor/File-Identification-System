@@ -18,7 +18,8 @@ int main(int argc, char **argv)
 
     Input *inputScanner = new InputScanner(path);
     HashAlgorithm *hashAlg = new SHA2();
-    Output *outputOffline = new OutputOffline();
+    Output *outputOffline = new OutputOffline(
+        strdup("Offline_scan.txt"));
 
     if (inputScanner->init())
         return 1;
@@ -59,13 +60,14 @@ int main(int argc, char **argv)
     delete hashAlg;
     delete outputOffline;
 
+    char *fileName = strdup("Validation_results.txt");
     char *host = strdup("localhost");
     char *user = strdup("root");
     char *passwd = strdup("rootpassword");
     char *dbName = strdup("test");
 
-    InputFile *inputFile = new InputFile();
-    Output *outputDB = new OutputDBConnection(host, user, passwd, dbName, 3306, NULL);
+    InputFile *inputFile = new InputFile(strdup("Offline_scan.txt"));
+    Output *outputDB = new OutputDBConnection(fileName, host, user, passwd, dbName, 3306, NULL);
 
     if (inputFile->init())
         return 1;
@@ -82,10 +84,6 @@ int main(int argc, char **argv)
         }
     } while (rc != -1);
 
-    free(host);
-    free(user);
-    free(passwd);
-    free(dbName);
     delete inputFile;
     delete outputDB;
 

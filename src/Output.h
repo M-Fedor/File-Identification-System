@@ -15,11 +15,11 @@ public:
   /* Initialize output component and report any failures */
   virtual int init();
 
+  /* Write data in output file */
+  virtual int outputData(std::string data);
+
   /* Get output and write it in output file */
   virtual int outputData(std::string digest, std::string name);
-
-protected:
-  std::ofstream fOutput;
 };
 
 #endif
