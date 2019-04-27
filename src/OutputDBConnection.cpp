@@ -2,17 +2,11 @@
 
 /* Constructor, set up the credentials for communication with DBMS */
 OutputDBConnection::OutputDBConnection(
-    char *outFileName, char *hostName, char *userName, char *userPasswd, char *dbName, unsigned int portNum, char *unixSocket)
-    : bufferSizeCoefficient(1)
+    const char *fileName, const char *host, const char *user, const char *passwd,
+    const char *db, unsigned int port, const char *unixSock)
+    : dbName(db), hostName(host), outFileName(fileName), unixSocket(unixSock), userName(user),
+      userPasswd(passwd), bufferSizeCoefficient(1), portNum(port)
 {
-    this->outFileName = outFileName;
-    this->hostName = hostName;
-    this->userName = userName;
-    this->userPasswd = userPasswd;
-    this->dbName = dbName;
-    this->portNum = portNum;
-    this->unixSocket = unixSocket;
-
     // Allocate buffers for data from database
     fileDigest = new char[DIGEST_SIZE];
     fileName = new char[NAME_SIZE];
@@ -38,12 +32,6 @@ OutputDBConnection::~OutputDBConnection()
     delete[] fileDigest;
     delete[] fileName;
     delete[] fileVersion;
-    free(hostName);
-    free(userName);
-    free(userPasswd);
-    free(dbName);
-    free(unixSocket);
-    free(getDigestFileNameStr);
     delete fOutput;
 }
 
@@ -169,11 +157,10 @@ int OutputDBConnection::init()
     }
 
     getDigestFileName = mysql_stmt_init(mysql);
-    getDigestFileNameStr =
-        strdup("(SELECT file_name, file_created, file_changed, file_digest, file_version"
-               " FROM fileinfo WHERE file_digest = ?) UNION"
-               " (SELECT file_name, file_created, file_changed, file_digest, file_version"
-               " FROM fileinfo WHERE file_name = ? AND file_digest != ?)");
+    getDigestFileNameStr = "(SELECT file_name, file_created, file_changed, file_digest, file_version"
+                           " FROM fileinfo WHERE file_digest = ?) UNION"
+                           " (SELECT file_name, file_created, file_changed, file_digest, file_version"
+                           " FROM fileinfo WHERE file_name = ? AND file_digest != ?)";
 
     if (mysql_stmt_prepare(getDigestFileName, getDigestFileNameStr, strlen(getDigestFileNameStr)))
     {

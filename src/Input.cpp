@@ -5,4 +5,4 @@ Input::~Input() {}
 
 int Input::init() { return 0; }
 int Input::inputNextFile(
-    std::ifstream &fDescriptor, std::string &pathName) { return -1; }
+    std::ifstream & /* fDescriptor */, std::string & /* pathName */) { return -1; }

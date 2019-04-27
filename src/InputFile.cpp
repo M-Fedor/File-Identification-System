@@ -1,11 +1,10 @@
 #include "InputFile.h"
 
 /* Constructor */
-InputFile::InputFile(char *name)
+InputFile::InputFile(const char *name) : srcFileName(name)
 {
     fileDigest = new char[DIGEST_SIZE];
     fileName = new char[NAME_SIZE];
-    srcFileName = name;
 }
 
 /* Destructor */
@@ -19,7 +18,6 @@ InputFile::~InputFile()
 
     delete[] fileDigest;
     delete[] fileName;
-    free(srcFileName);
 }
 
 /* Initialize source file reader and report any failures */

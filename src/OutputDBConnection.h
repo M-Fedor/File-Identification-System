@@ -17,8 +17,8 @@ in order to determine output and outputs data in output file */
 class OutputDBConnection : public Output
 {
 public:
-  OutputDBConnection(char *outFileName, char *hostName, char *userName, char *userPasswd,
-                     char *dbName, unsigned int portNum, char *unixSocket);
+  OutputDBConnection(const char *fileName, const char *host, const char *user, const char *passwd,
+                     const char *db, unsigned int port, const char *unixSock);
   ~OutputDBConnection();
 
   int init();
@@ -33,16 +33,16 @@ private:
       MYSQL_BIND &bind, enum enum_field_types field_type, void *param, size_t paramSize,
       size_t *paramLen, my_bool &isNull, my_bool &error, char &ind);
 
-  char *dbName;
   char *fileDigest;
   char *fileName;
   char *fileVersion;
-  char *getDigestFileNameStr;
-  char *hostName;
-  char *outFileName;
-  char *unixSocket;
-  char *userName;
-  char *userPasswd;
+  const char *dbName;
+  const char *getDigestFileNameStr;
+  const char *hostName;
+  const char *outFileName;
+  const char *unixSocket;
+  const char *userName;
+  const char *userPasswd;
   int bufferSizeCoefficient;
   MYSQL *mysql;
   MYSQL_BIND bind[5];

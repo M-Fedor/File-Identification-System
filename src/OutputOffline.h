@@ -9,7 +9,7 @@ to DBMS is available */
 class OutputOffline : public Output
 {
 public:
-  OutputOffline(char *fileName);
+  OutputOffline(const char *fileName);
   ~OutputOffline();
 
   int init();
@@ -17,7 +17,7 @@ public:
   int outputData(std::string digest, std::string name);
 
 private:
-  char *fileName;
+  const char *fileName;
   std::mutex mutex;
   std::ofstream fOutput;
 };

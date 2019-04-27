@@ -1,10 +1,8 @@
 #include "OutputOffline.h"
 
 /* Constructor */
-OutputOffline::OutputOffline(char *fileName)
-{
-    this->fileName = fileName;
-}
+OutputOffline::OutputOffline(const char *fileName)
+    : fileName(fileName) {}
 
 /* Destructor */
 OutputOffline::~OutputOffline()
@@ -14,7 +12,6 @@ OutputOffline::~OutputOffline()
     if (fOutput.fail())
         std::cerr << "\033[31mFAILED\033[0m to close \033[1m"
                   << fileName << "\033[0m\n";
-    free(fileName);
 }
 
 /* Open output file, report any failures */

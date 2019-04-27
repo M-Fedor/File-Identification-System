@@ -7,7 +7,7 @@
 #include "SHA2.h"
 #include <unistd.h>
 
-int main(int argc, char **argv)
+int main(int /* argc */, char **argv)
 {
     std::ifstream fDescriptor;
     std::string path(argv[1]);
@@ -18,8 +18,7 @@ int main(int argc, char **argv)
 
     Input *inputScanner = new InputScanner(path);
     HashAlgorithm *hashAlg = new SHA2();
-    Output *outputOffline = new OutputOffline(
-        strdup("Offline_scan.txt"));
+    Output *outputOffline = new OutputOffline("../data/Offline_scan.txt");
 
     if (inputScanner->init())
         return 1;
@@ -60,13 +59,13 @@ int main(int argc, char **argv)
     delete hashAlg;
     delete outputOffline;
 
-    char *fileName = strdup("Validation_results.txt");
+    const char *fileName = "../data/Validation_results.txt";
     char *host = strdup("localhost");
     char *user = strdup("root");
-    char *passwd = strdup("rootpassword");
+    char *passwd = strdup("HondaCivic10");
     char *dbName = strdup("test");
 
-    InputFile *inputFile = new InputFile(strdup("Offline_scan.txt"));
+    InputFile *inputFile = new InputFile("../data/Offline_scan.txt");
     Output *outputDB = new OutputDBConnection(fileName, host, user, passwd, dbName, 3306, NULL);
 
     if (inputFile->init())

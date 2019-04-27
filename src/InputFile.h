@@ -12,7 +12,7 @@ their corresponding precomputed unique identifiers */
 class InputFile : public Input
 {
 public:
-  InputFile(char *name);
+  InputFile(const char *name);
   ~InputFile();
 
   int init();
@@ -22,7 +22,7 @@ public:
 private:
   char *fileDigest;
   char *fileName;
-  char *srcFileName;
+  const char *srcFileName;
   std::ifstream fInput;
   std::string digest;
 };
