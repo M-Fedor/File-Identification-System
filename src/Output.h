@@ -1,7 +1,6 @@
 #ifndef Output_h
 #define Output_h
 
-#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -16,10 +15,10 @@ public:
   virtual int init();
 
   /* Write data in output file */
-  virtual int outputData(std::string data);
+  virtual int outputData(std::string &data);
 
   /* Get output and write it in output file */
-  virtual int outputData(std::string digest, std::string name);
+  virtual int outputData(std::string &digest, std::string &name);
 };
 
 #endif

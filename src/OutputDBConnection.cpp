@@ -35,7 +35,7 @@ OutputDBConnection::~OutputDBConnection()
     delete fOutput;
 }
 
-int OutputDBConnection::formatData(std::string digest, std::string name, std::string &data)
+int OutputDBConnection::formatData(std::string &digest, std::string &name, std::string &data)
 {
     bool foundResult = false;
     std::stringstream outputStr;
@@ -87,7 +87,7 @@ int OutputDBConnection::formatData(std::string digest, std::string name, std::st
     return 0;
 }
 
-int OutputDBConnection::getData(std::string digest, std::string name)
+int OutputDBConnection::getData(std::string &digest, std::string &name)
 {
     char ignoreInd = STMT_INDICATOR_IGNORE;
     char noneInd = STMT_INDICATOR_NONE;
@@ -176,7 +176,7 @@ int OutputDBConnection::init()
 }
 
 /* Get data from database and output them in output file */
-int OutputDBConnection::outputData(std::string digest, std::string name)
+int OutputDBConnection::outputData(std::string &digest, std::string &name)
 {
     if (getData(digest, name))
         return 1;

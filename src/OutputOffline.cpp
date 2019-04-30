@@ -1,5 +1,7 @@
 #include "OutputOffline.h"
 
+std::mutex OutputOffline::mutex;
+
 /* Constructor */
 OutputOffline::OutputOffline(const char *fileName)
     : fileName(fileName) {}
@@ -28,22 +30,20 @@ int OutputOffline::init()
     return 0;
 }
 
-int OutputOffline::outputData(std::string data)
+int OutputOffline::outputData(std::string &data)
 {
-    mutex.lock();
+    std::lock_guard<std::mutex> lock(mutex);
     fOutput << data.data();
-    mutex.unlock();
-
+    fOutput.flush();
     return 0;
 }
 
 /* Create formatted output */
-int OutputOffline::outputData(std::string digest, std::string name)
+int OutputOffline::outputData(std::string &digest, std::string &name)
 {
-    mutex.lock();
+    std::lock_guard<std::mutex> lock(mutex);
     fOutput << name.data() << "\n"
             << digest.data() << "\n";
-    mutex.unlock();
-
+    fOutput.flush();
     return 0;
 }

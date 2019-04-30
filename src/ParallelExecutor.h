@@ -18,9 +18,9 @@
 class ParallelExecutor
 {
 public:
-  ParallelExecutor(InputFile *in, std::vector<Output *> outputInstList, const char *errFile);
-  ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> hashAlgInstList,
-                   std::vector<Output *> outputInstList, const char *errFile);
+  ParallelExecutor(InputFile *in, std::vector<Output *> &outputInstList, const char *errFile = NULL);
+  ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
+                   std::vector<Output *> &outputInstList, const char *errFile = NULL);
   ~ParallelExecutor();
 
   int init();
@@ -30,8 +30,9 @@ public:
 private:
   typedef struct FileData
   {
-    FileData(std::ifstream &fDesc, std::string dig, std::string name)
-        : fDescriptor(&fDesc), digest(dig), pathName(name) {}
+    FileData() {}
+    FileData(std::ifstream *fDesc, std::string dig, std::string name)
+        : fDescriptor(fDesc), digest(dig), pathName(name) {}
     FileData(const FileData &d)
         : fDescriptor(d.fDescriptor), digest(d.digest), pathName(d.pathName) {}
 
@@ -40,13 +41,15 @@ private:
     std::string pathName;
   } FileData;
 
-  FileData popSync();
-  int inputNextFile(std::ifstream &fDescriptor, std::string &digest, std::string &pathName);
+  int popSync(FileData &data);
+  int inputNextFile(
+      std::ifstream *fDescriptor, std::string &digest, std::string &pathName);
   void pushSync(FileData &data);
   bool qAlmostEmptyPred();
   bool qReadyPred();
   static void threadFnInFile(Output *out, ParallelExecutor *execInst);
-  static void threadFnInScanner(HashAlgorithm *hashAlg, Output *out, ParallelExecutor *execInst);
+  static void threadFnInScanner(
+      HashAlgorithm *hashAlg, Output *out, ParallelExecutor *execInst);
 
   const char *errFileName;
   InputFile *inFile;
@@ -55,7 +58,7 @@ private:
   std::atomic<bool> done;
   std::atomic<bool> interrupted;
   std::condition_variable queueAlmostEmpty;
-  std::condition_variable queueEmpty;
+  std::condition_variable queueReady;
   std::mutex queueAccessMutex;
   std::mutex queueEmptyMutex;
   std::queue<FileData> dataQueue;

@@ -1,6 +1,7 @@
 #include "ParallelExecutor.h"
 
-ParallelExecutor::ParallelExecutor(InputFile *in, std::vector<Output *> outputInstList, const char *errFile)
+ParallelExecutor::ParallelExecutor(
+    InputFile *in, std::vector<Output *> &outputInstList, const char *errFile)
     : errFileName(errFile), inFile(in), inScanner(NULL), fError(NULL), done(false), interrupted(false)
 {
     this->outputInstList.assign(outputInstList.begin(), outputInstList.end());
@@ -8,8 +9,8 @@ ParallelExecutor::ParallelExecutor(InputFile *in, std::vector<Output *> outputIn
 }
 
 ParallelExecutor::ParallelExecutor(
-    InputScanner *in, std::vector<HashAlgorithm *> hashAlgInstList,
-    std::vector<Output *> outputInstList, const char *errFile)
+    InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
+    std::vector<Output *> &outputInstList, const char *errFile)
     : errFileName(errFile), inFile(NULL), inScanner(in), fError(NULL), done(false), interrupted(false)
 {
     this->hashAlgInstList.assign(hashAlgInstList.begin(), hashAlgInstList.end());
@@ -24,11 +25,6 @@ ParallelExecutor::~ParallelExecutor()
         delete inScanner;
         for (HashAlgorithm *hash : hashAlgInstList)
             delete hash;
-        while (!dataQueue.empty())
-        {
-            dataQueue.front().fDescriptor->close();
-            dataQueue.pop();
-        }
     }
     else
         delete inFile;
@@ -54,6 +50,7 @@ int ParallelExecutor::init()
     else
         return 1;
 
+    std::unique_lock<std::mutex> lock(queueAccessMutex);
     for (unsigned int i = 0; i < nCores; i++)
     {
         if (inScanner)
@@ -64,6 +61,7 @@ int ParallelExecutor::init()
                 return 1;
             threadList.push_back(std::thread(
                 threadFnInScanner, hashAlgInstList[i], outputInstList[i], this));
+            queueAlmostEmpty.wait(lock);
         }
         else if (inFile)
         {
@@ -73,18 +71,22 @@ int ParallelExecutor::init()
                 return 1;
             threadList.push_back(std::thread(
                 threadFnInFile, outputInstList[i], this));
+            queueAlmostEmpty.wait(lock);
         }
     }
 
-    fError = new OutputOffline(errFileName);
-    if (fError->init())
-        return 1;
+    if (errFileName)
+    {
+        fError = new OutputOffline(errFileName);
+        if (fError->init())
+            return 1;
+    }
 
     return 0;
 }
 
 int ParallelExecutor::inputNextFile(
-    std::ifstream &fDescriptor, std::string &digest, std::string &pathName)
+    std::ifstream *fDescriptor, std::string &digest, std::string &pathName)
 {
     int rc;
     if (inFile)
@@ -98,17 +100,26 @@ int ParallelExecutor::inputNextFile(
     return rc;
 }
 
-ParallelExecutor::FileData ParallelExecutor::popSync()
+int ParallelExecutor::popSync(FileData &data)
 {
     std::unique_lock<std::mutex> lock(queueAccessMutex);
-    FileData data = dataQueue.front();
+    while (dataQueue.empty() && !done)
+    {
+        std::cout << "queue empty\n";
+        while (qAlmostEmptyPred() && !done)
+            queueReady.wait(lock);
+    }
+    if (dataQueue.empty() && done)
+        return 1;
+
+    data = dataQueue.front();
     dataQueue.pop();
-    return data;
+    return 0;
 }
 
 void ParallelExecutor::pushSync(FileData &data)
 {
-    std::unique_lock<std::mutex> lock(queueAccessMutex);
+    std::lock_guard<std::mutex> lock(queueAccessMutex);
     dataQueue.push(data);
 }
 
@@ -123,29 +134,19 @@ void ParallelExecutor::setInterrupted() { interrupted.store(true); }
 void ParallelExecutor::threadFnInFile(Output *out, ParallelExecutor *execInst)
 {
     std::unique_lock<std::mutex> lock(execInst->queueAccessMutex);
-    while (!execInst->qReadyPred())
-        execInst->queueEmpty.wait(lock);
+    execInst->queueAlmostEmpty.notify_all();
+    while (!execInst->qReadyPred() && !execInst->done)
+        execInst->queueReady.wait(lock);
     lock.unlock();
     int rc;
 
     while (!execInst->interrupted)
     {
-        if (execInst->dataQueue.empty())
-        {
-            if (execInst->done)
-                break;
-            else
-            {
-                lock.lock();
-                while (execInst->qAlmostEmptyPred())
-                    execInst->queueEmpty.wait(lock);
-                lock.unlock();
-            }
-        }
-        else if (execInst->qAlmostEmptyPred())
+        if (execInst->qAlmostEmptyPred())
             execInst->queueAlmostEmpty.notify_all();
-
-        FileData data = execInst->popSync();
+        FileData data;
+        if (execInst->popSync(data))
+            break;
         do
             rc = out->outputData(data.digest, data.pathName);
         while (rc == 2);
@@ -159,50 +160,40 @@ void ParallelExecutor::threadFnInScanner(
 {
     char *buffer = new char[BUFFER_SIZE];
     std::unique_lock<std::mutex> lock(execInst->queueAccessMutex);
-    while (!execInst->qReadyPred())
-        execInst->queueEmpty.wait(lock);
+    execInst->queueAlmostEmpty.notify_all();
+    while (!execInst->qReadyPred() && !execInst->done)
+        execInst->queueReady.wait(lock);
     lock.unlock();
     int rc;
 
     while (!execInst->interrupted)
     {
-        if (execInst->dataQueue.empty())
-        {
-            if (execInst->done)
-                break;
-            else
-            {
-                lock.lock();
-                while (execInst->qAlmostEmptyPred())
-                    execInst->queueEmpty.wait(lock);
-                lock.unlock();
-            }
-        }
-        else if (execInst->qAlmostEmptyPred())
+        if (execInst->qAlmostEmptyPred())
             execInst->queueAlmostEmpty.notify_all();
 
-        FileData data = execInst->popSync();
+        FileData data;
+        if (execInst->popSync(data))
+            break;
         while (data.fDescriptor->good())
         {
             data.fDescriptor->read(buffer, BUFFER_SIZE);
             hashAlg->inputData(buffer, BUFFER_SIZE);
         }
         data.fDescriptor->close();
-        if (data.fDescriptor->fail())
+        if (data.fDescriptor->fail() && !data.fDescriptor->eof())
             continue;
 
         data.digest = hashAlg->hashData();
         do
             rc = out->outputData(data.digest, data.pathName);
         while (rc == 2);
-        if (rc == -1)
-            execInst->fError->outputData(data.digest, data.pathName);
     }
     delete[] buffer;
 }
 
 void ParallelExecutor::validate()
 {
+    std::ifstream *fDescriptor;
     std::string digest;
     std::string pathName;
     std::unique_lock<std::mutex> lock(queueEmptyMutex);
@@ -211,17 +202,19 @@ void ParallelExecutor::validate()
     {
         while (dataQueue.size() < 16 * nCores)
         {
-            std::ifstream fDescriptor;
+            fDescriptor = new std::ifstream();
             if (inputNextFile(fDescriptor, digest, pathName) == -1)
             {
+                std::unique_lock<std::mutex> lockAccess(queueAccessMutex);
+                std::cout << "done\n";
                 done.store(true);
                 break;
             }
             FileData data(fDescriptor, digest, pathName);
             pushSync(data);
         }
-        queueEmpty.notify_all();
-        while (!qAlmostEmptyPred())
+        queueReady.notify_all();
+        while (!qAlmostEmptyPred() && !done)
             queueAlmostEmpty.wait(lock);
     }
 

@@ -22,11 +22,11 @@ public:
   ~OutputDBConnection();
 
   int init();
-  int outputData(std::string digest, std::string name);
+  int outputData(std::string &digest, std::string &name);
 
 private:
-  int formatData(std::string digest, std::string name, std::string &data);
-  int getData(std::string digest, std::string name);
+  int formatData(std::string &digest, std::string &name, std::string &data);
+  int getData(std::string &digest, std::string &name);
   void printErr(std::string errInfo);
   void resizeBuffers();
   void setBind(

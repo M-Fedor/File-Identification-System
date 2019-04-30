@@ -3,7 +3,7 @@ INSTDIR=$(HOME)/git/File-System-Scanner/build
 
 testExec: src/testExec.cpp libinputFile.so libinputScanner.so liboutputDBConnection.so liboutputOffline.so libsha2.so libparallelExecutor.so
 	gcc -o $@ $< -L$(CURRENTDIR) -linput -loutput -lhashAlgorithm -linputFile -linputScanner -loutputDBConnection -loutputOffline -lsha2 \
-	-lcryptopp -lpthread -lmysqlclient -lstdc++ -pedantic -Wall -Wextra
+	-lparallelExecutor -lcryptopp -lpthread -lmysqlclient -lstdc++ -pedantic -Wall -Wextra
 
 libhashAlgorithm.so: hashAlgorithm.o
 	gcc -shared -o $@ $< -pedantic -Wall -Wextra

@@ -1,90 +1,41 @@
-#define BUFFER_SIZE 2000
-
-#include "InputFile.h"
-#include "InputScanner.h"
-#include "OutputDBConnection.h"
-#include "OutputOffline.h"
-#include "SHA2.h"
+#include "ParallelExecutor.h"
 #include <unistd.h>
 
 int main(int /* argc */, char **argv)
 {
-    std::ifstream fDescriptor;
     std::string path(argv[1]);
-    std::string digest;
-    std::string pathName;
-    char *buffer = new char[BUFFER_SIZE];
-    int rc = -2;
 
-    Input *inputScanner = new InputScanner(path);
-    HashAlgorithm *hashAlg = new SHA2();
-    Output *outputOffline = new OutputOffline("../data/Offline_scan.txt");
-
-    if (inputScanner->init())
-        return 1;
-    if (outputOffline->init())
-        return 1;
-
-    do
+    InputScanner *inScanner = new InputScanner(path);
+    std::vector<HashAlgorithm *> hashAlgList;
+    std::vector<Output *> outputList;
+    for (int i = 0; i < 4; i++)
     {
-        rc = inputScanner->inputNextFile(fDescriptor, pathName);
-        std::cout << "Return code: " << rc << "\n";
-        if (rc != -1)
-        {
-            while (fDescriptor.good())
-            {
-                fDescriptor.read(buffer, BUFFER_SIZE);
-                hashAlg->inputDataPart(buffer, BUFFER_SIZE);
-            }
-            digest = hashAlg->hashData();
-            std::cout << digest.data() << "\n";
-            fDescriptor.clear(std::_S_goodbit);
-            fDescriptor.seekg(0);
+        hashAlgList.push_back(new SHA2());
+        outputList.push_back(new OutputOffline("Offline_scan.txt"));
+    }
 
-            while (fDescriptor.good())
-            {
-                fDescriptor.read(buffer, BUFFER_SIZE);
-                hashAlg->inputDataPart(buffer, BUFFER_SIZE);
-            }
-            digest = hashAlg->hashData();
-            std::cout << digest.data() << "\n";
-            fDescriptor.close();
-
-            outputOffline->outputData(digest, pathName);
-        }
-    } while (rc != -1);
-
-    delete[] buffer;
-    delete inputScanner;
-    delete hashAlg;
-    delete outputOffline;
-
-    const char *fileName = "../data/Validation_results.txt";
-    char *host = strdup("localhost");
-    char *user = strdup("root");
-    char *passwd = strdup("HondaCivic10");
-    char *dbName = strdup("test");
-
-    InputFile *inputFile = new InputFile("../data/Offline_scan.txt");
-    Output *outputDB = new OutputDBConnection(fileName, host, user, passwd, dbName, 3306, NULL);
-
-    if (inputFile->init())
+    ParallelExecutor *exec = new ParallelExecutor(inScanner, hashAlgList, outputList);
+    if (exec->init())
         return 1;
-    if (outputDB->init())
+    exec->validate();
+    delete exec;
+    outputList.clear();
+
+    const char *fileName = "Validation_results.txt";
+    const char *host = "localhost";
+    const char *user = "root";
+    const char *passwd = "rootpassword";
+    const char *dbName = "test";
+
+    InputFile *inputFile = new InputFile("Offline_scan.txt");
+    for (int i = 0; i < 4; i++)
+        outputList.push_back(
+            new OutputDBConnection(fileName, host, user, passwd, dbName, 3306, NULL));
+    exec = new ParallelExecutor(inputFile, outputList);
+    if (exec->init())
         return 1;
-
-    do
-    {
-        rc = inputFile->inputNextFile(pathName);
-        if (rc != -1)
-        {
-            digest = inputFile->inputDigest();
-            outputDB->outputData(digest, pathName);
-        }
-    } while (rc != -1);
-
-    delete inputFile;
-    delete outputDB;
+    exec->validate();
+    delete exec;
 
     return 0;
 }

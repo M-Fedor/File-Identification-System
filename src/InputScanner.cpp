@@ -32,7 +32,7 @@ InputScanner::~InputScanner()
 /* Iterate through file-system, return next file's opened file descriptor for reading,
 fill absolute path of the file in pathName, return -1 when no more files can be found
 in current root of search */
-int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathName)
+int InputScanner::findNextFDRec(std::ifstream *fDescriptor, std::string &pathName)
 {
     // readdir returns NULL and doesn't change errno on END-OF-DIRECTORY
     errno = 0;
@@ -95,9 +95,9 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
         {
             // Then open it and let's observe ...
             std::string path = absolutePaths.back();
-            fDescriptor.open(path.append(dirContent->d_name).data());
+            fDescriptor->open(path.append(dirContent->d_name).data());
 
-            if (fDescriptor.good())
+            if (fDescriptor->good())
             {
                 std::cout << "\033[32mSUCCESSFUL\033[0m to open file\033[1m"
                           << path.data() << "\033[0m\n";
@@ -160,7 +160,7 @@ int InputScanner::init()
 
 /* Iterate through file system until some file is opened successfuly
 or END-OF-DIRECTORY is reached */
-int InputScanner::inputNextFile(std::ifstream &fDescriptor, std::string &pathName)
+int InputScanner::inputNextFile(std::ifstream *fDescriptor, std::string &pathName)
 {
     int rc = -3;
     do
