@@ -2,10 +2,10 @@
 
 /* Constructor, set up the credentials for communication with DBMS */
 OutputDBConnection::OutputDBConnection(
-    const char *fileName, const char *host, const char *user, const char *passwd,
+    OutputOffline *out, const char *host, const char *user, const char *passwd,
     const char *db, unsigned int port, const char *unixSock)
-    : dbName(db), hostName(host), outFileName(fileName), unixSocket(unixSock), userName(user),
-      userPasswd(passwd), bufferSizeCoefficient(1), portNum(port)
+    : dbName(db), hostName(host), unixSocket(unixSock), userName(user),
+      userPasswd(passwd), bufferSizeCoefficient(1), fOutput(out), portNum(port)
 {
     // Allocate buffers for data from database
     fileDigest = new char[DIGEST_SIZE];
@@ -32,7 +32,6 @@ OutputDBConnection::~OutputDBConnection()
     delete[] fileDigest;
     delete[] fileName;
     delete[] fileVersion;
-    delete fOutput;
 }
 
 int OutputDBConnection::formatData(std::string &digest, std::string &name, std::string &data)
@@ -168,7 +167,6 @@ int OutputDBConnection::init()
         return 1;
     }
 
-    fOutput = new OutputOffline(outFileName);
     if (fOutput->init())
         return 1;
 

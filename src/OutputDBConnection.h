@@ -17,7 +17,7 @@ in order to determine output and outputs data in output file */
 class OutputDBConnection : public Output
 {
 public:
-  OutputDBConnection(const char *fileName, const char *host, const char *user, const char *passwd,
+  OutputDBConnection(OutputOffline *out, const char *host, const char *user, const char *passwd,
                      const char *db, unsigned int port, const char *unixSock);
   ~OutputDBConnection();
 
@@ -39,7 +39,6 @@ private:
   const char *dbName;
   const char *getDigestFileNameStr;
   const char *hostName;
-  const char *outFileName;
   const char *unixSocket;
   const char *userName;
   const char *userPasswd;

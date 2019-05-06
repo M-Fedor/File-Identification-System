@@ -21,6 +21,8 @@ public:
   ParallelExecutor(InputFile *in, std::vector<Output *> &outputInstList, const char *errFile = NULL);
   ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
                    std::vector<Output *> &outputInstList, const char *errFile = NULL);
+  ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
+                   OutputOffline *out, const char *errFile = NULL);
   ~ParallelExecutor();
 
   int init();

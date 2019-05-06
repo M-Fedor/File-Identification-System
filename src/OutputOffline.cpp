@@ -19,7 +19,8 @@ OutputOffline::~OutputOffline()
 /* Open output file, report any failures */
 int OutputOffline::init()
 {
-    fOutput.open(fileName, std::ios::trunc);
+    if (!fOutput.is_open())
+        fOutput.open(fileName, std::ios::trunc);
     if (fOutput.fail())
     {
         std::cerr << "\033[31mFAILED\033[0m to open \033[1m"

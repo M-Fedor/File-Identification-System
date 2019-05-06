@@ -7,34 +7,41 @@ int main(int /* argc */, char **argv)
 
     InputScanner *inScanner = new InputScanner(path);
     std::vector<HashAlgorithm *> hashAlgList;
-    std::vector<Output *> outputList;
-    for (int i = 0; i < 4; i++)
-    {
+    OutputOffline *out = new OutputOffline("Offline_scan.txt");
+    for (int i = 0; i < 1; i++)
         hashAlgList.push_back(new SHA2());
-        outputList.push_back(new OutputOffline("Offline_scan.txt"));
-    }
 
-    ParallelExecutor *exec = new ParallelExecutor(inScanner, hashAlgList, outputList);
+    ParallelExecutor *exec = new ParallelExecutor(inScanner, hashAlgList, out);
     if (exec->init())
         return 1;
     exec->validate();
-    delete exec;
-    outputList.clear();
 
-    const char *fileName = "Validation_results.txt";
+    delete inScanner;
+    for (HashAlgorithm *hash : hashAlgList)
+        delete hash;
+    delete out;
+    delete exec;
+
     const char *host = "localhost";
     const char *user = "root";
     const char *passwd = "rootpassword";
     const char *dbName = "test";
 
     InputFile *inputFile = new InputFile("Offline_scan.txt");
+    out = new OutputOffline("Validation_results.txt");
+    std::vector<Output *> outputList;
     for (int i = 0; i < 4; i++)
         outputList.push_back(
-            new OutputDBConnection(fileName, host, user, passwd, dbName, 3306, NULL));
+            new OutputDBConnection(out, host, user, passwd, dbName, 3306, NULL));
     exec = new ParallelExecutor(inputFile, outputList);
     if (exec->init())
         return 1;
     exec->validate();
+
+    delete inputFile;
+    delete out;
+    for (Output *out : outputList)
+        delete out;
     delete exec;
 
     return 0;

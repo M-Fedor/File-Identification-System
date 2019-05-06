@@ -18,20 +18,17 @@ ParallelExecutor::ParallelExecutor(
     nCores = std::min(hashAlgInstList.size(), outputInstList.size());
 }
 
-ParallelExecutor::~ParallelExecutor()
+ParallelExecutor::ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
+                                   OutputOffline *out, const char *errFile)
+    : errFileName(errFile), inFile(NULL), inScanner(in), fError(NULL), done(false), interrupted(false)
 {
-    if (inScanner)
-    {
-        delete inScanner;
-        for (HashAlgorithm *hash : hashAlgInstList)
-            delete hash;
-    }
-    else
-        delete inFile;
-    for (Output *out : outputInstList)
-        delete out;
-    delete fError;
+    this->hashAlgInstList.assign(hashAlgInstList.begin(), hashAlgInstList.end());
+    nCores = hashAlgInstList.size();
+    for (unsigned int i = 0; i < nCores; i++)
+        outputInstList.push_back(out);
 }
+
+ParallelExecutor::~ParallelExecutor() { delete fError; }
 
 int ParallelExecutor::init()
 {
@@ -49,6 +46,13 @@ int ParallelExecutor::init()
     }
     else
         return 1;
+
+    if (errFileName)
+    {
+        fError = new OutputOffline(errFileName);
+        if (fError->init())
+            return 1;
+    }
 
     std::unique_lock<std::mutex> lock(queueAccessMutex);
     for (unsigned int i = 0; i < nCores; i++)
@@ -73,13 +77,6 @@ int ParallelExecutor::init()
                 threadFnInFile, outputInstList[i], this));
             queueAlmostEmpty.wait(lock);
         }
-    }
-
-    if (errFileName)
-    {
-        fError = new OutputOffline(errFileName);
-        if (fError->init())
-            return 1;
     }
 
     return 0;
