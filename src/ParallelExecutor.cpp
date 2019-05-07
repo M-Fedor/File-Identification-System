@@ -90,6 +90,7 @@ int ParallelExecutor::inputNextFile(
     {
         rc = inFile->inputNextFile(pathName);
         digest = inFile->inputDigest();
+        delete fDescriptor;
     }
     else
         rc = inScanner->inputNextFile(fDescriptor, pathName);
@@ -174,16 +175,16 @@ void ParallelExecutor::threadFnInScanner(
         while (data.fDescriptor->good())
         {
             data.fDescriptor->read(buffer, BUFFER_SIZE);
-            hashAlg->inputData(buffer, BUFFER_SIZE);
+            hashAlg->inputData(buffer, data.fDescriptor->gcount());
         }
-        data.fDescriptor->close();
-        if (data.fDescriptor->fail() && !data.fDescriptor->eof())
-            continue;
-
-        data.digest = hashAlg->hashData();
-        do
-            rc = out->outputData(data.digest, data.pathName);
-        while (rc == 2);
+        if (data.fDescriptor->eof())
+        {
+            data.digest = hashAlg->hashData();
+            do
+                rc = out->outputData(data.digest, data.pathName);
+            while (rc == 2);
+        }
+        delete data.fDescriptor;
     }
     delete[] buffer;
 }
