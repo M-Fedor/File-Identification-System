@@ -198,7 +198,7 @@ void ParallelExecutor::validate()
 
     while (!interrupted && !done)
     {
-        while (dataQueue.size() < 16 * nCores)
+        while (dataQueue.size() < MAX_QUEUE_LOAD_FACTOR * nCores)
         {
             fDescriptor = new std::ifstream();
             if (inputNextFile(fDescriptor, digest, pathName) == -1)
