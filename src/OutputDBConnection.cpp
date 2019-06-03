@@ -34,6 +34,7 @@ OutputDBConnection::~OutputDBConnection()
     delete[] fileVersion;
 }
 
+/* Format data obtained from database into convenient form */
 int OutputDBConnection::formatData(std::string &digest, std::string &name, std::string &data)
 {
     bool foundResult = false;
@@ -86,6 +87,7 @@ int OutputDBConnection::formatData(std::string &digest, std::string &name, std::
     return 0;
 }
 
+/* Set and execute the prepared statement in order to get data from database */
 int OutputDBConnection::getData(std::string &digest, std::string &name)
 {
     char ignoreInd = STMT_INDICATOR_IGNORE;

@@ -32,6 +32,7 @@ int OutputOffline::init()
     return 0;
 }
 
+/* Output data as they are */
 int OutputOffline::outputData(std::string &data)
 {
     std::lock_guard<std::mutex> lock(mutex);

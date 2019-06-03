@@ -1,5 +1,7 @@
 #include "ParallelExecutor.h"
 
+/* Constructor; set the input component to "InputFile" and set any output component.
+Number of threads is determined by number of output component instances provided */
 ParallelExecutor::ParallelExecutor(
     InputFile *in, std::vector<Output *> &outputInstList, const char *errFile)
     : errFileName(errFile), inFile(in), inScanner(NULL), done(false), interrupted(false)
@@ -8,6 +10,8 @@ ParallelExecutor::ParallelExecutor(
     nCores = outputInstList.size();
 }
 
+/* Constructor; set input component to "InputScanner" and set any hash algorithm and output components.
+Number of threads is determined by minimum of number of output component and hash algorithm instances provided */
 ParallelExecutor::ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
                                    std::vector<Output *> &outputInstList, const char *errFile)
     : errFileName(errFile), inFile(NULL), inScanner(in), done(false), interrupted(false)
@@ -17,6 +21,8 @@ ParallelExecutor::ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *
     nCores = std::min(hashAlgInstList.size(), outputInstList.size());
 }
 
+/* Constructor; set input component to "InputScanner", set any hashAlgorithm and single OutputOffline instance. 
+This is preferred way to utilize "OutputOffline" output component. */
 ParallelExecutor::ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
                                    OutputOffline *out, const char *errFile)
     : errFileName(errFile), inFile(NULL), inScanner(in), done(false), interrupted(false)
@@ -27,8 +33,10 @@ ParallelExecutor::ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *
         outputInstList.push_back(out);
 }
 
+/* Destructor */
 ParallelExecutor::~ParallelExecutor() {}
 
+/* Validate input parameters and initialize multithreaded environment */
 int ParallelExecutor::init()
 {
     if (!nCores)
@@ -78,6 +86,7 @@ int ParallelExecutor::init()
     return 0;
 }
 
+/* Input information about next file based on input component currently being used */
 int ParallelExecutor::inputNextFile(
     std::ifstream &fDescriptor, std::string &digest, std::string &pathName)
 {
@@ -89,12 +98,13 @@ int ParallelExecutor::inputNextFile(
     return rc;
 }
 
+/* Pop FileData structure from shared queue thread-safely; 
+wait if queue is empty */
 int ParallelExecutor::popSync(FileData &data)
 {
     std::unique_lock<std::mutex> lock(queueAccessMutex);
     while (dataQueue.empty() && !done)
     {
-        std::cout << "queue empty\n";
         while (qAlmostEmptyPred() && !done)
             queueReady.wait(lock);
     }
@@ -106,6 +116,7 @@ int ParallelExecutor::popSync(FileData &data)
     return 0;
 }
 
+/* Push FileData structure to shared queue thread-safely */
 void ParallelExecutor::pushSync(FileData &data)
 {
     std::lock_guard<std::mutex> lock(queueAccessMutex);
@@ -120,13 +131,21 @@ bool ParallelExecutor::qReadyPred() { return dataQueue.size() >=
 
 void ParallelExecutor::setInterrupted() { interrupted.store(true); }
 
-void ParallelExecutor::threadFnInFile(Output *out, ParallelExecutor *execInst)
+/* Synchronize with other threads up to a point when ready for data processing */
+void ParallelExecutor::synchronize(ParallelExecutor *execInst)
 {
     std::unique_lock<std::mutex> lock(execInst->queueAccessMutex);
     execInst->queueAlmostEmpty.notify_all();
     while (!execInst->qReadyPred() && !execInst->done)
         execInst->queueReady.wait(lock);
     lock.unlock();
+}
+
+/* Method being executed by worker thread when input component is set to "InputFile"; 
+Obtains FileData structures from shared queue and processes them using output component */
+void ParallelExecutor::threadFnInFile(Output *out, ParallelExecutor *execInst)
+{
+    synchronize(execInst);
     int rc;
 
     while (!execInst->interrupted)
@@ -144,16 +163,15 @@ void ParallelExecutor::threadFnInFile(Output *out, ParallelExecutor *execInst)
     }
 }
 
+/* Method being executed by worker thread when input component is set to "InputScanner"
+Obtains FileData structures from shared queue, computes corresponding unique identifiers 
+and processes them using output component */
 void ParallelExecutor::threadFnInScanner(
     HashAlgorithm *hashAlg, Output *out, ParallelExecutor *execInst)
 {
     char *buffer = new char[BUFFER_SIZE];
-    std::unique_lock<std::mutex> lock(execInst->queueAccessMutex);
-    execInst->queueAlmostEmpty.notify_all();
-    while (!execInst->qReadyPred() && !execInst->done)
-        execInst->queueReady.wait(lock);
-    lock.unlock();
     int rc;
+    synchronize(execInst);
 
     while (!execInst->interrupted)
     {
@@ -181,6 +199,8 @@ void ParallelExecutor::threadFnInScanner(
     delete[] buffer;
 }
 
+/* Loads input using input component, controls interruption 
+and termination of worker threads */
 void ParallelExecutor::validate()
 {
     std::string digest;

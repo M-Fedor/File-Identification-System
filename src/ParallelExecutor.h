@@ -15,6 +15,7 @@
 #include <queue>
 #include <thread>
 
+/* Class implements simple framework for parallel file checks and validation */
 class ParallelExecutor
 {
 public:
@@ -30,6 +31,7 @@ public:
   void validate();
 
 private:
+  // Structure contains data obtained from an input component
   typedef struct FileData
   {
     FileData() {}
@@ -52,6 +54,7 @@ private:
   void pushSync(FileData &data);
   bool qAlmostEmptyPred();
   bool qReadyPred();
+  static void synchronize(ParallelExecutor *execInst);
   static void threadFnInFile(Output *out, ParallelExecutor *execInst);
   static void threadFnInScanner(
       HashAlgorithm *hashAlg, Output *out, ParallelExecutor *execInst);

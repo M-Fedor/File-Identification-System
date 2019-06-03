@@ -34,8 +34,8 @@ int InputFile::init()
     return 0;
 }
 
-/* Load next file's credentials, fill absolute path of the file
-in pathName, set the digest value on corresponding file identifier,
+/* Load next file's credentials, fill absolute path of the file and 
+corresponding file identifier in pathname and digest respectively,
 return -1 when no more files are in the list */
 int InputFile::inputNextFile(std::string &digest, std::string &pathName)
 {

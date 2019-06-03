@@ -5,8 +5,11 @@
 #include <fstream>
 #include <mutex>
 
-/* Class implements output of computed data, when no connection
-to DBMS is available */
+/* Class implements thread-safe output of computed data, when no connection
+to DBMS is available; OS level synchronisation of multiple instances 
+associated with the same file is NOT implemented!
+Only SINGLE instance associated with the file should be used at the same time!
+Otherwise, the order characters are writen to file is UNDEFINED.  */
 class OutputOffline : public Output
 {
 public:
