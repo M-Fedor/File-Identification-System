@@ -15,10 +15,10 @@ public:
   ~InputScanner();
 
   int init();
-  int inputNextFile(std::ifstream *fDescriptor, std::string &pathName);
+  int inputNextFile(std::ifstream &fDescriptor, std::string &pathName);
 
 private:
-  int findNextFDRec(std::ifstream *fDescriptor, std::string &pathName);
+  int findNextFDRec(std::ifstream &fDescriptor, std::string &pathName);
 
   std::vector<std::string> absolutePaths;
   std::vector<DIR *> directoryStreams;

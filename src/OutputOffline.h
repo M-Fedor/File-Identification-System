@@ -10,8 +10,10 @@ to DBMS is available */
 class OutputOffline : public Output
 {
 public:
-  OutputOffline(const char *fileName);
+  OutputOffline(const char *fileName = NULL);
   ~OutputOffline();
+
+  OutputOffline &operator=(OutputOffline &&o) = default;
 
   int init();
   int outputData(std::string &data);

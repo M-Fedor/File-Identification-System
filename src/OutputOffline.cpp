@@ -10,9 +10,10 @@ OutputOffline::OutputOffline(const char *fileName)
 OutputOffline::~OutputOffline()
 {
     fOutput.clear(std::_S_goodbit);
-    fOutput.close();
+    if (fOutput.is_open())
+        fOutput.close();
     if (fOutput.fail())
-        std::cerr << "\033[31mFAILED\033[0m to close \033[1m"
+        std::cerr << "\033[31mFAILED\033[0m to close file \033[1m"
                   << fileName << "\033[0m\n";
 }
 

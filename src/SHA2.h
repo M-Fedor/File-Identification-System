@@ -18,8 +18,8 @@ public:
   std::string hashData();
 
 private:
-  CryptoPP::HexEncoder *encoder;
-  CryptoPP::SHA256 *digestor;
+  CryptoPP::HexEncoder encoder;
+  CryptoPP::SHA256 digestor;
   unsigned char *digest;
 };
 

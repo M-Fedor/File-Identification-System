@@ -33,19 +33,22 @@ private:
   typedef struct FileData
   {
     FileData() {}
-    FileData(std::ifstream *fDesc, std::string dig, std::string name)
-        : fDescriptor(fDesc), digest(dig), pathName(name) {}
-    FileData(const FileData &d)
-        : fDescriptor(d.fDescriptor), digest(d.digest), pathName(d.pathName) {}
+    FileData(std::ifstream &fDesc, std::string dig, std::string name)
+        : digest(dig), pathName(name) { fDescriptor = std::move(fDesc); }
+    FileData(const FileData &d) = delete;
+    FileData(FileData &&d) = default;
 
-    std::ifstream *fDescriptor;
+    FileData &operator=(const FileData &) = delete;
+    FileData &operator=(FileData &&d) = default;
+
+    std::ifstream fDescriptor;
     std::string digest;
     std::string pathName;
   } FileData;
 
   int popSync(FileData &data);
   int inputNextFile(
-      std::ifstream *fDescriptor, std::string &digest, std::string &pathName);
+      std::ifstream &fDescriptor, std::string &digest, std::string &pathName);
   void pushSync(FileData &data);
   bool qAlmostEmptyPred();
   bool qReadyPred();
@@ -56,7 +59,7 @@ private:
   const char *errFileName;
   InputFile *inFile;
   InputScanner *inScanner;
-  OutputOffline *fError;
+  OutputOffline fError;
   std::atomic<bool> done;
   std::atomic<bool> interrupted;
   std::condition_variable queueAlmostEmpty;

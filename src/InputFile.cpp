@@ -13,7 +13,7 @@ InputFile::~InputFile()
     fInput.clear(std::_S_goodbit);
     fInput.close();
     if (fInput.fail())
-        std::cerr << "\033[31mFAILED\033[0m to close \033[1m"
+        std::cerr << "\033[31mFAILED\033[0m to close file\033[1m"
                   << srcFileName << "\033[0m\n";
 
     delete[] fileDigest;
@@ -34,13 +34,10 @@ int InputFile::init()
     return 0;
 }
 
-/* Return file's corresponding unique identifier */
-std::string InputFile::inputDigest() { return digest; }
-
 /* Load next file's credentials, fill absolute path of the file
 in pathName, set the digest value on corresponding file identifier,
 return -1 when no more files are in the list */
-int InputFile::inputNextFile(std::string &pathName)
+int InputFile::inputNextFile(std::string &digest, std::string &pathName)
 {
     if (fInput.peek() == EOF)
         return -1;
