@@ -1,7 +1,6 @@
 #ifndef Output_h
 #define Output_h
 
-#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -15,11 +14,11 @@ public:
   /* Initialize output component and report any failures */
   virtual int init();
 
-  /* Get output and write it in output file */
-  virtual int outputData(std::string digest, std::string name);
+  /* Write data in output file */
+  virtual int outputData(std::string &data);
 
-protected:
-  std::ofstream fOutput;
+  /* Get output and write it in output file */
+  virtual int outputData(std::string &digest, std::string &name);
 };
 
 #endif

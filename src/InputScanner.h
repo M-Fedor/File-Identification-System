@@ -10,8 +10,8 @@
 class InputScanner : public Input
 {
 public:
-  InputScanner(std::string rootDirectory);
-  InputScanner(std::vector<std::string> rootDirectories);
+  InputScanner(std::string &rootDirectory);
+  InputScanner(std::vector<std::string> &rootDirectories);
   ~InputScanner();
 
   int init();

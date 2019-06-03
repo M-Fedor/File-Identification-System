@@ -1,36 +1,52 @@
 #include "OutputOffline.h"
 
+std::mutex OutputOffline::mutex;
+
 /* Constructor */
-OutputOffline::OutputOffline() {}
+OutputOffline::OutputOffline(const char *fileName)
+    : fileName(fileName) {}
 
 /* Destructor */
 OutputOffline::~OutputOffline()
 {
-    fOutput.close();
+    fOutput.clear(std::_S_goodbit);
+    if (fOutput.is_open())
+        fOutput.close();
     if (fOutput.fail())
-        std::cerr << "\033[31mFAILED\033[0m to close"
-                     " \033[1mOffline_scan.txt\033[0m\n";
+        std::cerr << "\033[31mFAILED\033[0m to close file \033[1m"
+                  << fileName << "\033[0m\n";
 }
 
 /* Open output file, report any failures */
 int OutputOffline::init()
 {
-    fOutput.open("Offline_scan.txt", std::ios::trunc);
+    if (!fOutput.is_open())
+        fOutput.open(fileName, std::ios::trunc);
     if (fOutput.fail())
     {
-        std::cerr << "\033[31mFAILED\033[0m to open"
-                     " \033[1mOffline_scan.txt\033[0m\n";
+        std::cerr << "\033[31mFAILED\033[0m to open \033[1m"
+                  << fileName << "\033[0m\n";
         return 1;
     }
 
     return 0;
 }
 
-/* Create formatted output */
-int OutputOffline::outputData(std::string digest, std::string name)
+/* Output data as they are */
+int OutputOffline::outputData(std::string &data)
 {
+    std::lock_guard<std::mutex> lock(mutex);
+    fOutput << data.data();
+    fOutput.flush();
+    return 0;
+}
+
+/* Create formatted output */
+int OutputOffline::outputData(std::string &digest, std::string &name)
+{
+    std::lock_guard<std::mutex> lock(mutex);
     fOutput << name.data() << "\n"
             << digest.data() << "\n";
-
+    fOutput.flush();
     return 0;
 }

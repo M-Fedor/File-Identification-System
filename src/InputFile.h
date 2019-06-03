@@ -12,18 +12,17 @@ their corresponding precomputed unique identifiers */
 class InputFile : public Input
 {
 public:
-  InputFile();
+  InputFile(const char *name);
   ~InputFile();
 
   int init();
-  std::string inputDigest();
-  int inputNextFile(std::string &pathName);
+  int inputNextFile(std::string &digest, std::string &pathName);
 
 private:
   char *fileDigest;
   char *fileName;
+  const char *srcFileName;
   std::ifstream fInput;
-  std::string digest;
 };
 
 #endif

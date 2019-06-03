@@ -1,13 +1,13 @@
 #include "InputScanner.h"
 
 /* Constructor, set root of search as single directory */
-InputScanner::InputScanner(std::string rootDirectory)
+InputScanner::InputScanner(std::string &rootDirectory)
 {
     rootDirectories.push_back(rootDirectory);
 }
 
 /* Constructor, set roots of serach as list of directories */
-InputScanner::InputScanner(std::vector<std::string> rootDirectories)
+InputScanner::InputScanner(std::vector<std::string> &rootDirectories)
 {
     this->rootDirectories.assign(rootDirectories.begin(), rootDirectories.end());
 }

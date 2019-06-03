@@ -1,7 +1,7 @@
 #include "InputFile.h"
 
 /* Constructor */
-InputFile::InputFile()
+InputFile::InputFile(const char *name) : srcFileName(name)
 {
     fileDigest = new char[DIGEST_SIZE];
     fileName = new char[NAME_SIZE];
@@ -10,37 +10,34 @@ InputFile::InputFile()
 /* Destructor */
 InputFile::~InputFile()
 {
-    delete[] fileDigest;
-    delete[] fileName;
-
-    fInput.setstate(std::_S_goodbit);
+    fInput.clear(std::_S_goodbit);
     fInput.close();
     if (fInput.fail())
-        std::cerr << "\033[31mFAILED\033[0m to close"
-                     " \033[1mOffline_scan.txt\033[0m\n";
+        std::cerr << "\033[31mFAILED\033[0m to close file\033[1m"
+                  << srcFileName << "\033[0m\n";
+
+    delete[] fileDigest;
+    delete[] fileName;
 }
 
 /* Initialize source file reader and report any failures */
 int InputFile::init()
 {
-    fInput.open("Offline_scan.txt");
+    fInput.open(srcFileName);
     if (fInput.fail())
     {
-        std::cerr << "\033[31mFAILED\033[0m to open"
-                     " \033[1mOffline_scan.txt\033[0m\n";
+        std::cerr << "\033[31mFAILED\033[0m to open \033[1m"
+                  << srcFileName << "\033[0m\n";
         return 1;
     }
 
     return 0;
 }
 
-/* Return file's corresponding unique identifier */
-std::string InputFile::inputDigest() { return digest; }
-
-/* Load next file's credentials, fill absolute path of the file
-in pathName, set the digest value on corresponding file identifier,
+/* Load next file's credentials, fill absolute path of the file and 
+corresponding file identifier in pathname and digest respectively,
 return -1 when no more files are in the list */
-int InputFile::inputNextFile(std::string &pathName)
+int InputFile::inputNextFile(std::string &digest, std::string &pathName)
 {
     if (fInput.peek() == EOF)
         return -1;
