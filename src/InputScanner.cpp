@@ -1,15 +1,18 @@
 #include "InputScanner.h"
 
 /* Constructor, set root of search as single directory */
-InputScanner::InputScanner(std::string &rootDirectory)
+InputScanner::InputScanner(std::string &rootDirectory, const char *pattern)
 {
     rootDirectories.push_back(rootDirectory);
+    regex = pattern ? std::regex(pattern) : std::regex(".*");
 }
 
 /* Constructor, set roots of serach as list of directories */
-InputScanner::InputScanner(std::vector<std::string> &rootDirectories)
+InputScanner::InputScanner(
+    std::vector<std::string> &rootDirectories, const char *pattern)
 {
     this->rootDirectories.assign(rootDirectories.begin(), rootDirectories.end());
+    regex = pattern ? std::regex(pattern) : std::regex(".*");
 }
 
 /* Destructor */
@@ -18,12 +21,9 @@ InputScanner::~InputScanner()
     while (!directoryStreams.empty())
     {
         if (closedir(directoryStreams.back()) == -1)
-        {
-            int temp_errno = errno;
-            std::cerr << "\033[31mFAILED\033[0m to close directory\033[1m "
-                      << absolutePaths.back().data() << "\033[0m\n";
-            std::cerr << strerror(temp_errno);
-        }
+            printErr(errno, static_cast<std::ostringstream &>(
+                                std::ostringstream() << "\033[31mFAILED\033[0m to close directory\033[1m "
+                                                     << absolutePaths.back().data() << "\033[0m\n"));
         directoryStreams.pop_back();
         absolutePaths.pop_back();
     }
@@ -34,33 +34,21 @@ fill absolute path of the file in pathName, return -1 when no more files can be 
 in current root of search */
 int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathName)
 {
-    // readdir returns NULL and doesn't change errno on END-OF-DIRECTORY
-    errno = 0;
+    errno = 0; // readdir returns NULL and doesn't change errno on END-OF-DIRECTORY
     struct dirent *dirContent = readdir(directoryStreams.back());
 
-    // Did error occur?
-    if (errno == 0)
+    if (errno == 0) // Did error occur?
     {
-        // Was the END-OF-DIRECTORY reached?
-        if (dirContent == NULL)
+        if (dirContent == NULL) // Was the END-OF-DIRECTORY reached?
         {
             if (closedir(directoryStreams.back()) == -1)
-            {
-                int temp_errno = errno;
-                std::cerr << "\033[31mFAILED\033[0m to close directory\033[1m"
-                          << absolutePaths.back().data() << "\033[0m\n";
-                std::cerr << strerror(temp_errno);
-            }
-
+                printErr(errno, static_cast<std::ostringstream &>(
+                                    std::ostringstream() << "\033[31mFAILED\033[0m to close directory\033[1m"
+                                                         << absolutePaths.back().data() << "\033[0m\n"));
             directoryStreams.pop_back();
             absolutePaths.pop_back();
-
             // If closed directory is subdirectory of another opened one, continue searching that one
-            if (!directoryStreams.empty())
-                return findNextFDRec(fDescriptor, pathName);
-            else
-                // No more files in current root of search
-                return -1;
+            return !directoryStreams.empty() ? findNextFDRec(fDescriptor, pathName) : -1;
         }
         // Is the next item in directory another directory?
         else if (dirContent->d_type == DT_DIR)
@@ -68,39 +56,26 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
             // Ignore ./ and ../
             if (strcmp(dirContent->d_name, ".") != 0 && strcmp(dirContent->d_name, "..") != 0)
             {
-                // Push new path and stream to respective lists ...
-                std::string path = absolutePaths.back();
+                std::string path = absolutePaths.back(); // Push new path and stream to respective lists ...
                 DIR *dirStream = opendir(path.append(dirContent->d_name).append("/").data());
-
                 if (dirStream != NULL)
                 {
-                    std::cout << "\033[32mSUCCESSFUL\033[0m to open directory\033[1m "
-                              << path.data() << "\033[0m\n";
                     directoryStreams.push_back(dirStream);
                     absolutePaths.push_back(path);
-                    // ... And continue searching in the subdirectory
                     return findNextFDRec(fDescriptor, pathName);
                 }
                 else
-                {
-                    int temp_errno = errno;
-                    std::cerr << "\033[31mFAILED\033[0m to open directory\033[1m"
-                              << path.data() << "\033[0m\n";
-                    std::cerr << strerror(temp_errno);
-                }
+                    printErr(errno, static_cast<std::ostringstream &>(
+                                        std::ostringstream() << "\033[31mFAILED\033[0m to open directory\033[1m"
+                                                             << path.data() << "\033[0m\n"));
             }
         }
-        // Is the next item in directory anything else?
-        else
+        else // Is the next item in directory anything else?
         {
-            // Then open it and let's observe ...
             std::string path = absolutePaths.back();
             fDescriptor.open(path.append(dirContent->d_name).data());
-
             if (fDescriptor.good())
             {
-                std::cout << "\033[32mSUCCESSFUL\033[0m to open file\033[1m"
-                          << path.data() << "\033[0m\n";
                 pathName.assign(path);
                 return 0;
             }
@@ -110,15 +85,10 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
         }
     }
     else
-    {
-        int temp_errno = errno;
-        std::cerr << "\033[31mFAILED\033[0m to read from directory\033[1m"
-                  << absolutePaths.back().data() << "\033[0m.\n";
-        std::cerr << strerror(temp_errno);
-    }
-
-    // Return -2 on system error
-    return -2;
+        printErr(errno, static_cast<std::ostringstream &>(
+                            std::ostringstream() << "\033[31mFAILED\033[0m to read from directory\033[1m"
+                                                 << absolutePaths.back().data() << "\033[0m.\n"));
+    return -2; // Return -2 on system error
 }
 
 /* Try to open next directory from list of search roots,
@@ -131,19 +101,14 @@ int InputScanner::init()
     DIR *dirStream = NULL;
     std::string path;
 
-    // Do until some directory is opened successfully
-    do
+    do // Do until some directory is opened successfully
     {
         path = rootDirectories.back().append("/");
         dirStream = opendir(path.data());
-
         if (dirStream == NULL)
-        {
-            int temp_errno = errno;
-            std::cerr << "\033[31mFAILED\033[0m to open directory\033[1m"
-                      << rootDirectories.back().data() << "\033[0m\n";
-            std::cerr << strerror(temp_errno);
-        }
+            printErr(errno, static_cast<std::ostringstream &>(
+                                std::ostringstream() << "\033[31mFAILED\033[0m to open directory\033[1m"
+                                                     << rootDirectories.back().data() << "\033[0m\n"));
         rootDirectories.pop_back();
     } while (dirStream == NULL && rootDirectories.size() != 0);
 
@@ -162,19 +127,35 @@ int InputScanner::init()
 or END-OF-DIRECTORY is reached */
 int InputScanner::inputNextFile(std::ifstream &fDescriptor, std::string &pathName)
 {
+    bool match = false;
     int rc = -3;
     do
+    {
         rc = findNextFDRec(fDescriptor, pathName);
-    while (rc == -2);
+        match = std::regex_match(pathName.data(), regex);
+        if (!match && fDescriptor.is_open())
+            fDescriptor.close();
+    } while (rc == -2 || (!rc && !match));
 
     while (rc == -1)
     {
         if (init() == -1)
             break;
         do
+        {
             rc = findNextFDRec(fDescriptor, pathName);
-        while (rc == -2);
+            match = std::regex_match(pathName.data(), regex);
+            if (!match && fDescriptor.is_open())
+                fDescriptor.close();
+        } while (rc == -2 || (!rc && !match));
     }
 
     return rc;
+}
+
+/* Print error details */
+void InputScanner::printErr(int errNum, const std::ostringstream &errInfo)
+{
+    std::cerr << errInfo.str().data();
+    std::cerr << strerror(errNum);
 }

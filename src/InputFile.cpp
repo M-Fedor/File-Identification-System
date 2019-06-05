@@ -1,10 +1,11 @@
 #include "InputFile.h"
 
 /* Constructor */
-InputFile::InputFile(const char *name) : srcFileName(name)
+InputFile::InputFile(const char *name, const char *pattern) : srcFileName(name)
 {
     fileDigest = new char[DIGEST_SIZE];
     fileName = new char[NAME_SIZE];
+    regex = pattern ? std::regex(pattern) : std::regex(".*");
 }
 
 /* Destructor */
@@ -42,14 +43,17 @@ int InputFile::inputNextFile(std::string &digest, std::string &pathName)
     if (fInput.peek() == EOF)
         return -1;
 
-    fInput.getline(fileName, NAME_SIZE);
-    pathName.assign(fileName);
+    do
+    {
+        fInput.getline(fileName, NAME_SIZE);
+        pathName.assign(fileName);
 
-    while (fInput.peek() == '\n')
-        pathName.push_back(fInput.get());
+        while (fInput.peek() == '\n')
+            pathName.push_back(fInput.get());
 
-    fInput.getline(fileDigest, DIGEST_SIZE);
-    digest.assign(fileDigest);
+        fInput.getline(fileDigest, DIGEST_SIZE);
+        digest.assign(fileDigest);
+    } while (!std::regex_match(fileName, regex));
 
     return 0;
 }

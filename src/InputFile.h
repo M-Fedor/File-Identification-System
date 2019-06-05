@@ -12,7 +12,7 @@ their corresponding precomputed unique identifiers */
 class InputFile : public Input
 {
 public:
-  InputFile(const char *name);
+  InputFile(const char *name, const char *pattern = NULL);
   ~InputFile();
 
   int init();

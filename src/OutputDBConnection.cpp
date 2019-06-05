@@ -24,9 +24,7 @@ OutputDBConnection::OutputDBConnection(
 OutputDBConnection::~OutputDBConnection()
 {
     if (mysql_stmt_close(getDigestFileName))
-        printErr(std::string(
-            "\033[31mFAILED\033[0m to close MySQL statement\n"));
-
+        printErr("\033[31mFAILED\033[0m to close MySQL statement\n");
     mysql_close(mysql);
 
     delete[] fileDigest;
@@ -68,8 +66,7 @@ int OutputDBConnection::formatData(std::string &digest, std::string &name, std::
 
     if (rc == 1)
     {
-        printErr(std::string(
-            "\033[31mFAILED\033[0m to fetch MySQL statement results\n"));
+        printErr("\033[31mFAILED\033[0m to fetch MySQL statement results\n");
         return 1;
     }
     else if (rc == MYSQL_DATA_TRUNCATED)
@@ -105,19 +102,18 @@ int OutputDBConnection::getData(std::string &digest, std::string &name)
     setBind(bind[1], MYSQL_TYPE_STRING, strdup(name.data()), 0, &paramLen[1], isNull[0], error[0], ntsInd);
     setBind(bind[2], MYSQL_TYPE_STRING, strdup(digest.data()), 0, &paramLen[0], isNull[0], error[0], ntsInd);
 
-    // Ignore the rest of bind structures this time
-    for (int i = 3; i < 5; i++)
+    for (int i = 3; i < 5; i++) // Ignore the rest of bind structures this time
         setBind(bind[i], MYSQL_TYPE_STRING, NULL, 0, NULL, isNull[1], error[0], ignoreInd);
 
     if (mysql_stmt_bind_param(getDigestFileName, bind))
     {
-        printErr(std::string("\033[31mFAILED\033[0m to bind MySQL statement\n"));
+        printErr("\033[31mFAILED\033[0m to bind MySQL statement\n");
         return 1;
     }
 
     if (mysql_stmt_execute(getDigestFileName))
     {
-        printErr(std::string("\033[31mFAILED\033[0m to execute MySQL statement\n"));
+        printErr("\033[31mFAILED\033[0m to execute MySQL statement\n");
         return 1;
     }
 
@@ -133,14 +129,13 @@ int OutputDBConnection::getData(std::string &digest, std::string &name)
 
     if (mysql_stmt_bind_result(getDigestFileName, bind))
     {
-        printErr(std::string("\033[31mFAILED\033[0m to bind MySQL statement results\n"));
+        printErr("\033[31mFAILED\033[0m to bind MySQL statement results\n");
         return 1;
     }
 
-    // Fetch the entire result set at once
-    if (mysql_stmt_store_result(getDigestFileName))
+    if (mysql_stmt_store_result(getDigestFileName)) // Fetch the entire result set at once
     {
-        printErr(std::string("\033[31mFAILED\033[0m to store MySQL statement results\n"));
+        printErr("\033[31mFAILED\033[0m to store MySQL statement results\n");
         return 1;
     }
 
@@ -153,7 +148,7 @@ int OutputDBConnection::init()
     mysql = mysql_init(NULL);
     if (!mysql_real_connect(mysql, hostName, userName, userPasswd, dbName, portNum, unixSocket, 0))
     {
-        printErr(std::string("\033[31mFAILED\033[0m to open MySQL connection\n"));
+        printErr("\033[31mFAILED\033[0m to open MySQL connection\n");
         return 1;
     }
 
@@ -162,10 +157,9 @@ int OutputDBConnection::init()
                            " FROM fileinfo WHERE file_digest = ?) UNION"
                            " (SELECT file_name, file_created, file_changed, file_digest, file_version"
                            " FROM fileinfo WHERE file_name = ? AND file_digest != ?)";
-
     if (mysql_stmt_prepare(getDigestFileName, getDigestFileNameStr, strlen(getDigestFileNameStr)))
     {
-        printErr(std::string("\033[31mFAILED\033[0m to prepare MySQL statement\n"));
+        printErr("\033[31mFAILED\033[0m to prepare MySQL statement\n");
         return 1;
     }
 
@@ -190,9 +184,10 @@ int OutputDBConnection::outputData(std::string &digest, std::string &name)
     return 0;
 }
 
-void OutputDBConnection::printErr(std::string errInfo)
+/* Print error details */
+void OutputDBConnection::printErr(const char *errInfo)
 {
-    std::cerr << errInfo.data();
+    std::cerr << errInfo;
     std::cerr << "Error(" << mysql_errno(mysql) << ") ["
               << mysql_sqlstate(mysql) << "] \"" << mysql_error(mysql) << "\"\n";
 }
@@ -224,10 +219,6 @@ void OutputDBConnection::setBind(
     if (paramLen)
     {
         bind.length = paramLen;
-
-        if (!paramSize)
-            bind.buffer_length = *paramLen;
-        else
-            bind.buffer_length = paramSize;
+        bind.buffer_length = !paramSize ? *paramLen : paramSize;
     }
 }

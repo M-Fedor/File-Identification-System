@@ -27,7 +27,7 @@ public:
 private:
   int formatData(std::string &digest, std::string &name, std::string &data);
   int getData(std::string &digest, std::string &name);
-  void printErr(std::string errInfo);
+  void printErr(const char *errInfo);
   void resizeBuffers();
   void setBind(
       MYSQL_BIND &bind, enum enum_field_types field_type, void *param, size_t paramSize,
