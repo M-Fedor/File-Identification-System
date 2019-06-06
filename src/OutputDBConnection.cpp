@@ -5,7 +5,7 @@ OutputDBConnection::OutputDBConnection(
     OutputOffline *out, const char *host, const char *user, const char *passwd,
     const char *db, unsigned int port, const char *unixSock)
     : dbName(db), hostName(host), unixSocket(unixSock), userName(user),
-      userPasswd(passwd), bufferSizeCoefficient(1), fOutput(out), portNum(port)
+      userPasswd(passwd), bufferSizeFactor(1), fOutput(out), portNum(port)
 {
     // Allocate buffers for data from database
     fileDigest = new char[DIGEST_SIZE];
@@ -72,6 +72,7 @@ int OutputDBConnection::formatData(std::string &digest, std::string &name, std::
     else if (rc == MYSQL_DATA_TRUNCATED)
     {
         std::cout << "\033[33mWARNING:\033[0m data truncated, resizing buffers...\n";
+        mysql_stmt_data_seek(getDigestFileName, 0);
         resizeBuffers();
         return 2;
     }
@@ -121,7 +122,7 @@ int OutputDBConnection::getData(std::string &digest, std::string &name)
         free(bind[i].buffer);
 
     // Bind corresponding storage to atributes of result set
-    setBind(bind[0], MYSQL_TYPE_STRING, fileName, NAME_SIZE, &paramLen[0], isNull[0], error[0], noneInd);
+    setBind(bind[0], MYSQL_TYPE_STRING, fileName, NAME_SIZE * bufferSizeFactor, &paramLen[0], isNull[0], error[0], noneInd);
     setBind(bind[1], MYSQL_TYPE_TIMESTAMP, &fileCreated, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[1], isNull[1], error[1], noneInd);
     setBind(bind[2], MYSQL_TYPE_TIMESTAMP, &fileChanged, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[2], isNull[2], error[2], noneInd);
     setBind(bind[3], MYSQL_TYPE_STRING, fileDigest, DIGEST_SIZE, &paramLen[3], isNull[3], error[3], noneInd);
@@ -175,10 +176,14 @@ int OutputDBConnection::outputData(std::string &digest, std::string &name)
     if (getData(digest, name))
         return 1;
 
+    int rc = 0;
     std::string data;
-    int rc = formatData(digest, name, data);
-    if (rc)
-        return rc;
+    do
+    {
+        rc = formatData(digest, name, data);
+        if (rc == 1)
+            return rc;
+    } while (rc == 2);
 
     fOutput->outputData(data);
     return 0;
@@ -196,13 +201,13 @@ void OutputDBConnection::printErr(const char *errInfo)
 and versions of our databases */
 void OutputDBConnection::resizeBuffers()
 {
-    bufferSizeCoefficient *= 2;
+    bufferSizeFactor *= 2;
 
     delete[] fileName;
     delete[] fileVersion;
 
-    fileName = new char[NAME_SIZE * bufferSizeCoefficient];
-    fileVersion = new char[VERSION_SIZE * bufferSizeCoefficient];
+    fileName = new char[NAME_SIZE * bufferSizeFactor];
+    fileVersion = new char[VERSION_SIZE * bufferSizeFactor];
 }
 
 /* Fill in parameters of bind structure used for definition of statement variables substitution

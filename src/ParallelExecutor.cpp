@@ -155,9 +155,7 @@ void ParallelExecutor::threadFnInFile(Output *out, ParallelExecutor *execInst)
         FileData data;
         if (execInst->popSync(data))
             break;
-        do
-            rc = out->outputData(data.digest, data.pathName);
-        while (rc == 2);
+        rc = out->outputData(data.digest, data.pathName);
         if (rc == 1)
             execInst->fError.outputData(data.digest, data.pathName);
     }
@@ -189,9 +187,7 @@ void ParallelExecutor::threadFnInScanner(
         if (data.fDescriptor.eof())
         {
             data.digest = hashAlg->hashData();
-            do
-                rc = out->outputData(data.digest, data.pathName);
-            while (rc == 2);
+            rc = out->outputData(data.digest, data.pathName);
             if (rc == 1)
                 execInst->fError.outputData(data.digest, data.pathName);
         }

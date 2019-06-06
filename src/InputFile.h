@@ -2,7 +2,7 @@
 #define InputFile_h
 
 #define DIGEST_SIZE 65
-#define NAME_SIZE 300
+#define IN_NAME_SIZE 300
 
 #include "Input.h"
 
@@ -19,9 +19,12 @@ public:
   int inputNextFile(std::string &digest, std::string &pathName);
 
 private:
+  void resizeBuffers();
+
   char *fileDigest;
   char *fileName;
   const char *srcFileName;
+  int bufferSizeFactor;
   std::ifstream fInput;
 };
 

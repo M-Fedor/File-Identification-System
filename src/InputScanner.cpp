@@ -50,8 +50,7 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
             // If closed directory is subdirectory of another opened one, continue searching that one
             return !directoryStreams.empty() ? findNextFDRec(fDescriptor, pathName) : -1;
         }
-        // Is the next item in directory another directory?
-        else if (dirContent->d_type == DT_DIR)
+        else if (dirContent->d_type == DT_DIR) // Is the next item in directory another directory?
         {
             // Ignore ./ and ../
             if (strcmp(dirContent->d_name, ".") != 0 && strcmp(dirContent->d_name, "..") != 0)

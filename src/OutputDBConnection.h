@@ -42,7 +42,7 @@ private:
   const char *unixSocket;
   const char *userName;
   const char *userPasswd;
-  int bufferSizeCoefficient;
+  int bufferSizeFactor;
   MYSQL *mysql;
   MYSQL_BIND bind[5];
   MYSQL_STMT *getDigestFileName;
