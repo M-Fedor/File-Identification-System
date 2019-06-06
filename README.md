@@ -13,6 +13,18 @@ to detect.
 
 ## Install all dependencies
 
+### User
+
+Redhat:
+
+`dnf install cryptopp mariadb-connector-c`
+
+Debian:
+
+`apt-get install libcrypto++ libmariadb2`
+
+### Developer
+
 Redhat:
 
 `dnf install cryptopp cryptopp-devel mariadb-connector-c mariadb-connector-c-devel`
@@ -23,10 +35,9 @@ Debian:
 
 ## Compile
 
-Place this project directory in `$HOME/git/` or define respective custom directories in `Makefile`.
+Place this project directory in `$HOME/git/` or define respective custom directory in `Makefile`.
 
 ```
-CURRENTDIR=$(HOME)/git/File-System-Scanner/
 INSTDIR=$(HOME)/git/File-System-Scanner/build
 ```
 Then change to project directory on your local system.
