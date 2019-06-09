@@ -36,6 +36,8 @@ private:
   char *fileDigest;
   char *fileName;
   char *fileVersion;
+  char *osCombination;
+  char *swPackage;
   const char *dbName;
   const char *getDigestFileNameStr;
   const char *hostName;
@@ -44,10 +46,11 @@ private:
   const char *userPasswd;
   int bufferSizeFactor;
   MYSQL *mysql;
-  MYSQL_BIND bind[5];
+  MYSQL_BIND bind[8];
   MYSQL_STMT *getDigestFileName;
   MYSQL_TIME fileCreated;
   MYSQL_TIME fileChanged;
+  MYSQL_TIME fileRegistered;
   OutputOffline *fOutput;
   std::vector<my_bool> error;
   std::vector<my_bool> isNull;

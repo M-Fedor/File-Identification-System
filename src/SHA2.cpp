@@ -1,10 +1,7 @@
 #include "SHA2.h"
 
 /* Constructor */
-SHA2::SHA2()
-{
-    digest = new unsigned char[digestor.DIGESTSIZE];
-}
+SHA2::SHA2() { digest = new unsigned char[digestor.DIGESTSIZE]; }
 
 /* Destructor */
 SHA2::~SHA2() { delete[] digest; }

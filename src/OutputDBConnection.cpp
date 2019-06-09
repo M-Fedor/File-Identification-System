@@ -11,11 +11,13 @@ OutputDBConnection::OutputDBConnection(
     fileDigest = new char[DIGEST_SIZE];
     fileName = new char[NAME_SIZE];
     fileVersion = new char[VERSION_SIZE];
+    osCombination = new char[VERSION_SIZE];
+    swPackage = new char[VERSION_SIZE];
 
     // Initialize indicators for query execution
-    error = std::vector<my_bool>(5, 0);
-    isNull = std::vector<my_bool>(5, 0);
-    paramLen = std::vector<size_t>(5, 0);
+    error = std::vector<my_bool>(8, 0);
+    isNull = std::vector<my_bool>(8, 0);
+    paramLen = std::vector<size_t>(8, 0);
 
     memset(&bind, 0, sizeof(MYSQL_BIND) * 5);
 }
@@ -30,6 +32,8 @@ OutputDBConnection::~OutputDBConnection()
     delete[] fileDigest;
     delete[] fileName;
     delete[] fileVersion;
+    delete[] osCombination;
+    delete[] swPackage;
 }
 
 /* Format data obtained from database into convenient form */
@@ -59,7 +63,10 @@ int OutputDBConnection::formatData(std::string &digest, std::string &name, std::
                   << fileCreated.year << " " << fileCreated.hour << ":" << fileCreated.minute << ":"
                   << fileCreated.second << ", " << fileChanged.day << "." << fileChanged.month << "."
                   << fileChanged.year << " " << fileChanged.hour << ":" << fileChanged.minute << ":"
-                  << fileChanged.second << ", " << fileDigest << ", " << fileVersion << "\n";
+                  << fileChanged.second << ", " << fileRegistered.day << "." << fileRegistered.month << "."
+                  << fileRegistered.year << " " << fileRegistered.hour << ":" << fileRegistered.minute << ":"
+                  << fileRegistered.second << fileDigest << ", " << fileVersion << ", " << swPackage << ", "
+                  << osCombination << "\n";
 
         rc = mysql_stmt_fetch(getDigestFileName);
     }
@@ -111,13 +118,11 @@ int OutputDBConnection::getData(std::string &digest, std::string &name)
         printErr("\033[31mFAILED\033[0m to bind MySQL statement\n");
         return 1;
     }
-
     if (mysql_stmt_execute(getDigestFileName))
     {
         printErr("\033[31mFAILED\033[0m to execute MySQL statement\n");
         return 1;
     }
-
     for (int i = 0; i < 3; i++)
         free(bind[i].buffer);
 
@@ -125,15 +130,17 @@ int OutputDBConnection::getData(std::string &digest, std::string &name)
     setBind(bind[0], MYSQL_TYPE_STRING, fileName, NAME_SIZE * bufferSizeFactor, &paramLen[0], isNull[0], error[0], noneInd);
     setBind(bind[1], MYSQL_TYPE_TIMESTAMP, &fileCreated, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[1], isNull[1], error[1], noneInd);
     setBind(bind[2], MYSQL_TYPE_TIMESTAMP, &fileChanged, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[2], isNull[2], error[2], noneInd);
-    setBind(bind[3], MYSQL_TYPE_STRING, fileDigest, DIGEST_SIZE, &paramLen[3], isNull[3], error[3], noneInd);
-    setBind(bind[4], MYSQL_TYPE_STRING, fileVersion, VERSION_SIZE, &paramLen[4], isNull[4], error[4], noneInd);
+    setBind(bind[3], MYSQL_TYPE_TIMESTAMP, &fileRegistered, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[3], isNull[3], error[3], noneInd);
+    setBind(bind[4], MYSQL_TYPE_STRING, fileDigest, DIGEST_SIZE, &paramLen[4], isNull[4], error[4], noneInd);
+    setBind(bind[5], MYSQL_TYPE_STRING, fileVersion, VERSION_SIZE * bufferSizeFactor, &paramLen[5], isNull[5], error[5], noneInd);
+    setBind(bind[6], MYSQL_TYPE_STRING, swPackage, VERSION_SIZE * bufferSizeFactor, &paramLen[6], isNull[6], error[6], noneInd);
+    setBind(bind[7], MYSQL_TYPE_STRING, osCombination, VERSION_SIZE * bufferSizeFactor, &paramLen[7], isNull[7], error[7], noneInd);
 
     if (mysql_stmt_bind_result(getDigestFileName, bind))
     {
         printErr("\033[31mFAILED\033[0m to bind MySQL statement results\n");
         return 1;
     }
-
     if (mysql_stmt_store_result(getDigestFileName)) // Fetch the entire result set at once
     {
         printErr("\033[31mFAILED\033[0m to store MySQL statement results\n");
@@ -154,16 +161,17 @@ int OutputDBConnection::init()
     }
 
     getDigestFileName = mysql_stmt_init(mysql);
-    getDigestFileNameStr = "(SELECT file_name, file_created, file_changed, file_digest, file_version"
+    getDigestFileNameStr = "(SELECT file_name, file_created, file_changed, file_registered, file_digest,"
+                           " file_version, sw_package, os_combination"
                            " FROM fileinfo WHERE file_digest = ?) UNION"
-                           " (SELECT file_name, file_created, file_changed, file_digest, file_version"
+                           " (SELECT file_name, file_created, file_changed, file_registered, file_digest,"
+                           " file_version, sw_package, os_combination"
                            " FROM fileinfo WHERE file_name = ? AND file_digest != ?)";
     if (mysql_stmt_prepare(getDigestFileName, getDigestFileNameStr, strlen(getDigestFileNameStr)))
     {
         printErr("\033[31mFAILED\033[0m to prepare MySQL statement\n");
         return 1;
     }
-
     if (fOutput->init())
         return 1;
 

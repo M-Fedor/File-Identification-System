@@ -52,7 +52,6 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
         }
         else if (dirContent->d_type == DT_DIR) // Is the next item in directory another directory?
         {
-            // Ignore ./ and ../
             if (strcmp(dirContent->d_name, ".") != 0 && strcmp(dirContent->d_name, "..") != 0)
             {
                 std::string path = absolutePaths.back(); // Push new path and stream to respective lists ...
