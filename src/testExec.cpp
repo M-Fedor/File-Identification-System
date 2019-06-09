@@ -5,7 +5,7 @@ int main(int /* argc */, char **argv)
 {
     std::string path(argv[1]);
 
-    InputScanner *inScanner = new InputScanner(path);
+    InputScanner *inScanner = new InputScanner(path, ".*");
     std::vector<HashAlgorithm *> hashAlgList;
     OutputOffline *out = new OutputOffline("Offline_scan.txt");
     for (int i = 0; i < 8; i++)
@@ -24,7 +24,7 @@ int main(int /* argc */, char **argv)
 
     const char *host = "localhost";
     const char *user = "root";
-    const char *passwd = "HondaCivic10";
+    const char *passwd = "rootpassword";
     const char *dbName = "test";
 
     InputFile *inputFile = new InputFile("Offline_scan.txt");

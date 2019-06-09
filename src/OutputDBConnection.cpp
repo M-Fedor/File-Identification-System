@@ -5,17 +5,19 @@ OutputDBConnection::OutputDBConnection(
     OutputOffline *out, const char *host, const char *user, const char *passwd,
     const char *db, unsigned int port, const char *unixSock)
     : dbName(db), hostName(host), unixSocket(unixSock), userName(user),
-      userPasswd(passwd), bufferSizeCoefficient(1), fOutput(out), portNum(port)
+      userPasswd(passwd), bufferSizeFactor(1), fOutput(out), portNum(port)
 {
     // Allocate buffers for data from database
     fileDigest = new char[DIGEST_SIZE];
     fileName = new char[NAME_SIZE];
     fileVersion = new char[VERSION_SIZE];
+    osCombination = new char[VERSION_SIZE];
+    swPackage = new char[VERSION_SIZE];
 
     // Initialize indicators for query execution
-    error = std::vector<my_bool>(5, 0);
-    isNull = std::vector<my_bool>(5, 0);
-    paramLen = std::vector<size_t>(5, 0);
+    error = std::vector<my_bool>(8, 0);
+    isNull = std::vector<my_bool>(8, 0);
+    paramLen = std::vector<size_t>(8, 0);
 
     memset(&bind, 0, sizeof(MYSQL_BIND) * 5);
 }
@@ -24,14 +26,14 @@ OutputDBConnection::OutputDBConnection(
 OutputDBConnection::~OutputDBConnection()
 {
     if (mysql_stmt_close(getDigestFileName))
-        printErr(std::string(
-            "\033[31mFAILED\033[0m to close MySQL statement\n"));
-
+        printErr("\033[31mFAILED\033[0m to close MySQL statement\n");
     mysql_close(mysql);
 
     delete[] fileDigest;
     delete[] fileName;
     delete[] fileVersion;
+    delete[] osCombination;
+    delete[] swPackage;
 }
 
 /* Format data obtained from database into convenient form */
@@ -61,20 +63,23 @@ int OutputDBConnection::formatData(std::string &digest, std::string &name, std::
                   << fileCreated.year << " " << fileCreated.hour << ":" << fileCreated.minute << ":"
                   << fileCreated.second << ", " << fileChanged.day << "." << fileChanged.month << "."
                   << fileChanged.year << " " << fileChanged.hour << ":" << fileChanged.minute << ":"
-                  << fileChanged.second << ", " << fileDigest << ", " << fileVersion << "\n";
+                  << fileChanged.second << ", " << fileRegistered.day << "." << fileRegistered.month << "."
+                  << fileRegistered.year << " " << fileRegistered.hour << ":" << fileRegistered.minute << ":"
+                  << fileRegistered.second << fileDigest << ", " << fileVersion << ", " << swPackage << ", "
+                  << osCombination << "\n";
 
         rc = mysql_stmt_fetch(getDigestFileName);
     }
 
     if (rc == 1)
     {
-        printErr(std::string(
-            "\033[31mFAILED\033[0m to fetch MySQL statement results\n"));
+        printErr("\033[31mFAILED\033[0m to fetch MySQL statement results\n");
         return 1;
     }
     else if (rc == MYSQL_DATA_TRUNCATED)
     {
         std::cout << "\033[33mWARNING:\033[0m data truncated, resizing buffers...\n";
+        mysql_stmt_data_seek(getDigestFileName, 0);
         resizeBuffers();
         return 2;
     }
@@ -105,42 +110,40 @@ int OutputDBConnection::getData(std::string &digest, std::string &name)
     setBind(bind[1], MYSQL_TYPE_STRING, strdup(name.data()), 0, &paramLen[1], isNull[0], error[0], ntsInd);
     setBind(bind[2], MYSQL_TYPE_STRING, strdup(digest.data()), 0, &paramLen[0], isNull[0], error[0], ntsInd);
 
-    // Ignore the rest of bind structures this time
-    for (int i = 3; i < 5; i++)
+    for (int i = 3; i < 5; i++) // Ignore the rest of bind structures this time
         setBind(bind[i], MYSQL_TYPE_STRING, NULL, 0, NULL, isNull[1], error[0], ignoreInd);
 
     if (mysql_stmt_bind_param(getDigestFileName, bind))
     {
-        printErr(std::string("\033[31mFAILED\033[0m to bind MySQL statement\n"));
+        printErr("\033[31mFAILED\033[0m to bind MySQL statement\n");
         return 1;
     }
-
     if (mysql_stmt_execute(getDigestFileName))
     {
-        printErr(std::string("\033[31mFAILED\033[0m to execute MySQL statement\n"));
+        printErr("\033[31mFAILED\033[0m to execute MySQL statement\n");
         return 1;
     }
-
     for (int i = 0; i < 3; i++)
         free(bind[i].buffer);
 
     // Bind corresponding storage to atributes of result set
-    setBind(bind[0], MYSQL_TYPE_STRING, fileName, NAME_SIZE, &paramLen[0], isNull[0], error[0], noneInd);
+    setBind(bind[0], MYSQL_TYPE_STRING, fileName, NAME_SIZE * bufferSizeFactor, &paramLen[0], isNull[0], error[0], noneInd);
     setBind(bind[1], MYSQL_TYPE_TIMESTAMP, &fileCreated, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[1], isNull[1], error[1], noneInd);
     setBind(bind[2], MYSQL_TYPE_TIMESTAMP, &fileChanged, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[2], isNull[2], error[2], noneInd);
-    setBind(bind[3], MYSQL_TYPE_STRING, fileDigest, DIGEST_SIZE, &paramLen[3], isNull[3], error[3], noneInd);
-    setBind(bind[4], MYSQL_TYPE_STRING, fileVersion, VERSION_SIZE, &paramLen[4], isNull[4], error[4], noneInd);
+    setBind(bind[3], MYSQL_TYPE_TIMESTAMP, &fileRegistered, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[3], isNull[3], error[3], noneInd);
+    setBind(bind[4], MYSQL_TYPE_STRING, fileDigest, DIGEST_SIZE, &paramLen[4], isNull[4], error[4], noneInd);
+    setBind(bind[5], MYSQL_TYPE_STRING, fileVersion, VERSION_SIZE * bufferSizeFactor, &paramLen[5], isNull[5], error[5], noneInd);
+    setBind(bind[6], MYSQL_TYPE_STRING, swPackage, VERSION_SIZE * bufferSizeFactor, &paramLen[6], isNull[6], error[6], noneInd);
+    setBind(bind[7], MYSQL_TYPE_STRING, osCombination, VERSION_SIZE * bufferSizeFactor, &paramLen[7], isNull[7], error[7], noneInd);
 
     if (mysql_stmt_bind_result(getDigestFileName, bind))
     {
-        printErr(std::string("\033[31mFAILED\033[0m to bind MySQL statement results\n"));
+        printErr("\033[31mFAILED\033[0m to bind MySQL statement results\n");
         return 1;
     }
-
-    // Fetch the entire result set at once
-    if (mysql_stmt_store_result(getDigestFileName))
+    if (mysql_stmt_store_result(getDigestFileName)) // Fetch the entire result set at once
     {
-        printErr(std::string("\033[31mFAILED\033[0m to store MySQL statement results\n"));
+        printErr("\033[31mFAILED\033[0m to store MySQL statement results\n");
         return 1;
     }
 
@@ -153,22 +156,22 @@ int OutputDBConnection::init()
     mysql = mysql_init(NULL);
     if (!mysql_real_connect(mysql, hostName, userName, userPasswd, dbName, portNum, unixSocket, 0))
     {
-        printErr(std::string("\033[31mFAILED\033[0m to open MySQL connection\n"));
+        printErr("\033[31mFAILED\033[0m to open MySQL connection\n");
         return 1;
     }
 
     getDigestFileName = mysql_stmt_init(mysql);
-    getDigestFileNameStr = "(SELECT file_name, file_created, file_changed, file_digest, file_version"
+    getDigestFileNameStr = "(SELECT file_name, file_created, file_changed, file_registered, file_digest,"
+                           " file_version, sw_package, os_combination"
                            " FROM fileinfo WHERE file_digest = ?) UNION"
-                           " (SELECT file_name, file_created, file_changed, file_digest, file_version"
+                           " (SELECT file_name, file_created, file_changed, file_registered, file_digest,"
+                           " file_version, sw_package, os_combination"
                            " FROM fileinfo WHERE file_name = ? AND file_digest != ?)";
-
     if (mysql_stmt_prepare(getDigestFileName, getDigestFileNameStr, strlen(getDigestFileNameStr)))
     {
-        printErr(std::string("\033[31mFAILED\033[0m to prepare MySQL statement\n"));
+        printErr("\033[31mFAILED\033[0m to prepare MySQL statement\n");
         return 1;
     }
-
     if (fOutput->init())
         return 1;
 
@@ -181,18 +184,23 @@ int OutputDBConnection::outputData(std::string &digest, std::string &name)
     if (getData(digest, name))
         return 1;
 
+    int rc = 0;
     std::string data;
-    int rc = formatData(digest, name, data);
-    if (rc)
-        return rc;
+    do
+    {
+        rc = formatData(digest, name, data);
+        if (rc == 1)
+            return rc;
+    } while (rc == 2);
 
     fOutput->outputData(data);
     return 0;
 }
 
-void OutputDBConnection::printErr(std::string errInfo)
+/* Print error details */
+void OutputDBConnection::printErr(const char *errInfo)
 {
-    std::cerr << errInfo.data();
+    std::cerr << errInfo;
     std::cerr << "Error(" << mysql_errno(mysql) << ") ["
               << mysql_sqlstate(mysql) << "] \"" << mysql_error(mysql) << "\"\n";
 }
@@ -201,13 +209,13 @@ void OutputDBConnection::printErr(std::string errInfo)
 and versions of our databases */
 void OutputDBConnection::resizeBuffers()
 {
-    bufferSizeCoefficient *= 2;
+    bufferSizeFactor *= 2;
 
     delete[] fileName;
     delete[] fileVersion;
 
-    fileName = new char[NAME_SIZE * bufferSizeCoefficient];
-    fileVersion = new char[VERSION_SIZE * bufferSizeCoefficient];
+    fileName = new char[NAME_SIZE * bufferSizeFactor];
+    fileVersion = new char[VERSION_SIZE * bufferSizeFactor];
 }
 
 /* Fill in parameters of bind structure used for definition of statement variables substitution
@@ -224,10 +232,6 @@ void OutputDBConnection::setBind(
     if (paramLen)
     {
         bind.length = paramLen;
-
-        if (!paramSize)
-            bind.buffer_length = *paramLen;
-        else
-            bind.buffer_length = paramSize;
+        bind.buffer_length = !paramSize ? *paramLen : paramSize;
     }
 }

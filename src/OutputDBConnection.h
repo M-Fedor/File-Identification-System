@@ -27,7 +27,7 @@ public:
 private:
   int formatData(std::string &digest, std::string &name, std::string &data);
   int getData(std::string &digest, std::string &name);
-  void printErr(std::string errInfo);
+  void printErr(const char *errInfo);
   void resizeBuffers();
   void setBind(
       MYSQL_BIND &bind, enum enum_field_types field_type, void *param, size_t paramSize,
@@ -36,18 +36,21 @@ private:
   char *fileDigest;
   char *fileName;
   char *fileVersion;
+  char *osCombination;
+  char *swPackage;
   const char *dbName;
   const char *getDigestFileNameStr;
   const char *hostName;
   const char *unixSocket;
   const char *userName;
   const char *userPasswd;
-  int bufferSizeCoefficient;
+  int bufferSizeFactor;
   MYSQL *mysql;
-  MYSQL_BIND bind[5];
+  MYSQL_BIND bind[8];
   MYSQL_STMT *getDigestFileName;
   MYSQL_TIME fileCreated;
   MYSQL_TIME fileChanged;
+  MYSQL_TIME fileRegistered;
   OutputOffline *fOutput;
   std::vector<my_bool> error;
   std::vector<my_bool> isNull;

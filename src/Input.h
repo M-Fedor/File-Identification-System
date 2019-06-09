@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <regex>
 #include <string>
 
 /* Interface for data input component */
@@ -18,6 +19,9 @@ public:
   /* Increment file-system iterator, return opened file descriptor
   and fill absolute path of the file in pathName */
   virtual int inputNextFile(std::ifstream &fDescriptor, std::string &pathName);
+
+protected:
+  std::regex regex;
 };
 
 #endif
