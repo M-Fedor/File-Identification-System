@@ -8,6 +8,7 @@
 #include "Output.h"
 #include "OutputOffline.h"
 #include <cstring>
+#include <memory>
 #include <mysql/mysql.h>
 #include <sstream>
 #include <vector>

@@ -19,7 +19,7 @@ OutputDBConnection::OutputDBConnection(
     isNull = std::vector<my_bool>(8, 0);
     paramLen = std::vector<size_t>(8, 0);
 
-    memset(&bind, 0, sizeof(MYSQL_BIND) * 5);
+    memset(&bind, 0, sizeof(MYSQL_BIND) * 8);
 }
 
 /* Destructor */
@@ -67,7 +67,6 @@ int OutputDBConnection::formatData(std::string &digest, std::string &name, std::
                   << fileRegistered.year << " " << fileRegistered.hour << ":" << fileRegistered.minute << ":"
                   << fileRegistered.second << fileDigest << ", " << fileVersion << ", " << swPackage << ", "
                   << osCombination << "\n";
-
         rc = mysql_stmt_fetch(getDigestFileName);
     }
 
@@ -86,9 +85,8 @@ int OutputDBConnection::formatData(std::string &digest, std::string &name, std::
 
     if (!foundResult)
         outputStr << "FILE_NOT_FOUND\n";
-    outputStr << "\n";
-    data = outputStr.str();
 
+    data = outputStr.str();
     return 0;
 }
 
@@ -102,15 +100,19 @@ int OutputDBConnection::getData(std::string &digest, std::string &name)
     // Only two of indicators are necessary for bind when substituting for statement variables (?)
     isNull[0] = false;
     isNull[1] = true;
-    paramLen[0] = strlen(digest.data());
-    paramLen[1] = strlen(name.data());
+    paramLen[0] = digest.size();
+    paramLen[1] = name.size();
+
+    std::unique_ptr<char> digestStr(new char[digest.size()]);
+    std::unique_ptr<char> nameStr(new char[name.size()]);
+    strncpy(digestStr.get(), digest.data(), digest.size());
+    strncpy(nameStr.get(), name.data(), name.size());
 
     //Bind statement variables to their corresponding substitutions
-    setBind(bind[0], MYSQL_TYPE_STRING, strdup(digest.data()), 0, &paramLen[0], isNull[0], error[0], ntsInd);
-    setBind(bind[1], MYSQL_TYPE_STRING, strdup(name.data()), 0, &paramLen[1], isNull[0], error[0], ntsInd);
-    setBind(bind[2], MYSQL_TYPE_STRING, strdup(digest.data()), 0, &paramLen[0], isNull[0], error[0], ntsInd);
-
-    for (int i = 3; i < 5; i++) // Ignore the rest of bind structures this time
+    setBind(bind[0], MYSQL_TYPE_STRING, digestStr.get(), 0, &paramLen[0], isNull[0], error[0], ntsInd);
+    setBind(bind[1], MYSQL_TYPE_STRING, nameStr.get(), 0, &paramLen[1], isNull[0], error[0], ntsInd);
+    setBind(bind[2], MYSQL_TYPE_STRING, digestStr.get(), 0, &paramLen[0], isNull[0], error[0], ntsInd);
+    for (int i = 3; i < 8; i++) // Ignore the rest of bind structures this time
         setBind(bind[i], MYSQL_TYPE_STRING, NULL, 0, NULL, isNull[1], error[0], ignoreInd);
 
     if (mysql_stmt_bind_param(getDigestFileName, bind))
@@ -123,8 +125,6 @@ int OutputDBConnection::getData(std::string &digest, std::string &name)
         printErr("\033[31mFAILED\033[0m to execute MySQL statement\n");
         return 1;
     }
-    for (int i = 0; i < 3; i++)
-        free(bind[i].buffer);
 
     // Bind corresponding storage to atributes of result set
     setBind(bind[0], MYSQL_TYPE_STRING, fileName, NAME_SIZE * bufferSizeFactor, &paramLen[0], isNull[0], error[0], noneInd);
@@ -213,9 +213,13 @@ void OutputDBConnection::resizeBuffers()
 
     delete[] fileName;
     delete[] fileVersion;
+    delete[] osCombination;
+    delete[] swPackage;
 
     fileName = new char[NAME_SIZE * bufferSizeFactor];
     fileVersion = new char[VERSION_SIZE * bufferSizeFactor];
+    osCombination = new char[VERSION_SIZE * bufferSizeFactor];
+    swPackage = new char[VERSION_SIZE * bufferSizeFactor];
 }
 
 /* Fill in parameters of bind structure used for definition of statement variables substitution
