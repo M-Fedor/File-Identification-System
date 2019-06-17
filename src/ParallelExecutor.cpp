@@ -3,8 +3,8 @@
 /* Constructor; set the input component to "InputFile" and set any output component.
 Number of threads is determined by number of output component instances provided */
 ParallelExecutor::ParallelExecutor(
-    InputFile *in, std::vector<Output *> &outputInstList, const char *errFile)
-    : errFileName(errFile), inFile(in), inScanner(NULL), done(false), interrupted(false)
+    std::shared_ptr<InputFile> in, std::vector<std::shared_ptr<Output>> &outputInstList, const char *errFile)
+    : errFileName(errFile), done(false), interrupted(false), inFile(in), inScanner(NULL)
 {
     this->outputInstList.assign(outputInstList.begin(), outputInstList.end());
     nCores = outputInstList.size();
@@ -12,9 +12,10 @@ ParallelExecutor::ParallelExecutor(
 
 /* Constructor; set input component to "InputScanner" and set any hash algorithm and output components.
 Number of threads is determined by minimum of number of output component and hash algorithm instances provided */
-ParallelExecutor::ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
-                                   std::vector<Output *> &outputInstList, const char *errFile)
-    : errFileName(errFile), inFile(NULL), inScanner(in), done(false), interrupted(false)
+ParallelExecutor::ParallelExecutor(
+    std::shared_ptr<InputScanner> in, std::vector<std::shared_ptr<HashAlgorithm>> &hashAlgInstList,
+    std::vector<std::shared_ptr<Output>> &outputInstList, const char *errFile)
+    : errFileName(errFile), done(false), interrupted(false), inFile(NULL), inScanner(in)
 {
     this->hashAlgInstList.assign(hashAlgInstList.begin(), hashAlgInstList.end());
     this->outputInstList.assign(outputInstList.begin(), outputInstList.end());
@@ -23,9 +24,9 @@ ParallelExecutor::ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *
 
 /* Constructor; set input component to "InputScanner", set any hashAlgorithm and single OutputOffline instance. 
 This is preferred way to utilize "OutputOffline" output component. */
-ParallelExecutor::ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
-                                   OutputOffline *out, const char *errFile)
-    : errFileName(errFile), inFile(NULL), inScanner(in), done(false), interrupted(false)
+ParallelExecutor::ParallelExecutor(std::shared_ptr<InputScanner> in, std::vector<std::shared_ptr<HashAlgorithm>> &hashAlgInstList,
+                                   std::shared_ptr<OutputOffline> out, const char *errFile)
+    : errFileName(errFile), done(false), interrupted(false), inFile(NULL), inScanner(in)
 {
     this->hashAlgInstList.assign(hashAlgInstList.begin(), hashAlgInstList.end());
     nCores = hashAlgInstList.size();
@@ -39,6 +40,8 @@ ParallelExecutor::~ParallelExecutor() {}
 /* Validate input parameters and initialize multithreaded environment */
 int ParallelExecutor::init()
 {
+    if (!nCores)
+        return 1;
     if (inFile)
     {
         if (inFile->init())
@@ -62,17 +65,21 @@ int ParallelExecutor::init()
     std::unique_lock<std::mutex> lock(queueAccessMutex);
     for (unsigned int i = 0; i < nCores; i++)
     {
+        if (!outputInstList[i])
+            return 1;
         if (outputInstList[i]->init())
             return 1;
         if (inScanner)
         {
-            threadList.emplace_back(
-                threadFnInScanner, hashAlgInstList[i], outputInstList[i], this);
+            if (!hashAlgInstList[i])
+                return 1;
+            threadList.emplace_back(threadFnInScanner, hashAlgInstList[i].get(),
+                                    outputInstList[i].get(), this);
             queueAlmostEmpty.wait(lock);
         }
         else if (inFile)
         {
-            threadList.emplace_back(threadFnInFile, outputInstList[i], this);
+            threadList.emplace_back(threadFnInFile, outputInstList[i].get(), this);
             queueAlmostEmpty.wait(lock);
         }
     }

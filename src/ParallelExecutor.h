@@ -19,11 +19,12 @@
 class ParallelExecutor
 {
 public:
-  ParallelExecutor(InputFile *in, std::vector<Output *> &outputInstList, const char *errFile = NULL);
-  ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
-                   std::vector<Output *> &outputInstList, const char *errFile = NULL);
-  ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
-                   OutputOffline *out, const char *errFile = NULL);
+  ParallelExecutor(std::shared_ptr<InputFile> in, std::vector<std::shared_ptr<Output>> &outputInstList,
+                   const char *errFile = NULL);
+  ParallelExecutor(std::shared_ptr<InputScanner> in, std::vector<std::shared_ptr<HashAlgorithm>> &hashAlgInstList,
+                   std::vector<std::shared_ptr<Output>> &outputInstList, const char *errFile = NULL);
+  ParallelExecutor(std::shared_ptr<InputScanner> in, std::vector<std::shared_ptr<HashAlgorithm>> &hashAlgInstList,
+                   std::shared_ptr<OutputOffline> out, const char *errFile = NULL);
   ~ParallelExecutor();
 
   int init();
@@ -60,8 +61,6 @@ private:
       HashAlgorithm *hashAlg, Output *out, ParallelExecutor *execInst);
 
   const char *errFileName;
-  InputFile *inFile;
-  InputScanner *inScanner;
   OutputOffline fError;
   std::atomic<bool> done;
   std::atomic<bool> interrupted;
@@ -70,8 +69,10 @@ private:
   std::mutex queueAccessMutex;
   std::mutex queueEmptyMutex;
   std::queue<FileData> dataQueue;
-  std::vector<HashAlgorithm *> hashAlgInstList;
-  std::vector<Output *> outputInstList;
+  std::shared_ptr<InputFile> inFile;
+  std::shared_ptr<InputScanner> inScanner;
+  std::vector<std::shared_ptr<HashAlgorithm>> hashAlgInstList;
+  std::vector<std::shared_ptr<Output>> outputInstList;
   std::vector<std::thread> threadList;
   unsigned int nCores;
 };

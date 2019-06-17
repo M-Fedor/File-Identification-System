@@ -2,59 +2,48 @@
 
 int executeInFileMode()
 {
-    InputFile *inFile = new InputFile(inputFileName.data(), regexTarget.data());
-    std::vector<Output *> outputList;
-    OutputOffline *out = new OutputOffline(outputFileName.data());
+    std::shared_ptr<InputFile> inFile(new InputFile(inputFileName.data(), regexTarget.data()));
+    std::vector<std::shared_ptr<Output>> outputList;
+    std::shared_ptr<OutputOffline> out(new OutputOffline(outputFileName.data()));
     for (unsigned int i = 0; i < nCores; i++)
-        outputList.push_back(new OutputDBConnection(
-            out, hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL));
-    ParallelExecutor *parallelExecutor = (errFileName.size() == 0) ? new ParallelExecutor(inFile, outputList)
-                                                                   : new ParallelExecutor(inFile, outputList, errFileName.data());
-    if (parallelExecutor->init())
+        outputList.push_back(std::shared_ptr<Output>(new OutputDBConnection(
+            out.get(), hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL)));
+    std::shared_ptr<ParallelExecutor> exec =
+        (errFileName.size() == 0) ? std::shared_ptr<ParallelExecutor>(new ParallelExecutor(inFile, outputList))
+                                  : std::shared_ptr<ParallelExecutor>(new ParallelExecutor(inFile, outputList, errFileName.data()));
+    if (exec->init())
         return 1;
-    parallelExecutor->validate();
-
-    delete inFile;
-    delete out;
-    for (Output *out : outputList)
-        delete out;
-    delete parallelExecutor;
+    exec->validate();
 
     return 0;
 }
 
 int executeInScannerMode()
 {
-    InputScanner *inScanner = new InputScanner(rootDirectories, regexTarget.data());
-    std::vector<HashAlgorithm *> hashAlgList;
-    std::vector<Output *> outputList;
-    OutputOffline *out = new OutputOffline(outputFileName.data());
-    ParallelExecutor *parallelExecutor;
+    std::shared_ptr<InputScanner> inScanner(new InputScanner(rootDirectories, regexTarget.data()));
+    std::vector<std::shared_ptr<HashAlgorithm>> hashAlgList;
+    std::vector<std::shared_ptr<Output>> outputList;
+    std::shared_ptr<OutputOffline> out(new OutputOffline(outputFileName.data()));
+    std::shared_ptr<ParallelExecutor> exec;
     for (unsigned int i = 0; i < nCores; i++)
-        hashAlgList.push_back(new SHA2());
+        hashAlgList.push_back(std::shared_ptr<HashAlgorithm>(new SHA2()));
     if (offline)
-        parallelExecutor = (errFileName.size() == 0) ? new ParallelExecutor(inScanner, hashAlgList, out)
-                                                     : new ParallelExecutor(inScanner, hashAlgList, out, errFileName.data());
+        exec = (errFileName.size() == 0)
+                   ? std::shared_ptr<ParallelExecutor>(new ParallelExecutor(inScanner, hashAlgList, out))
+                   : std::shared_ptr<ParallelExecutor>(new ParallelExecutor(inScanner, hashAlgList, out, errFileName.data()));
     else
     {
         for (unsigned int i = 0; i < nCores; i++)
-            outputList.push_back(new OutputDBConnection(
-                out, hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL));
-        parallelExecutor = (errFileName.size() == 0) ? new ParallelExecutor(inScanner, hashAlgList, outputList)
-                                                     : new ParallelExecutor(inScanner, hashAlgList, outputList, errFileName.data());
+            outputList.push_back(std::shared_ptr<OutputDBConnection>(new OutputDBConnection(
+                out.get(), hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL)));
+        exec = (errFileName.size() == 0)
+                   ? std::shared_ptr<ParallelExecutor>(new ParallelExecutor(inScanner, hashAlgList, outputList))
+                   : std::shared_ptr<ParallelExecutor>(new ParallelExecutor(inScanner, hashAlgList, outputList, errFileName.data()));
     }
 
-    if (parallelExecutor->init())
+    if (exec->init())
         return 1;
-    parallelExecutor->validate();
-
-    delete inScanner;
-    delete out;
-    for (HashAlgorithm *alg : hashAlgList)
-        delete alg;
-    for (Output *out : outputList)
-        delete out;
-    delete parallelExecutor;
+    exec->validate();
 
     return 0;
 }

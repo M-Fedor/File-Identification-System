@@ -8,11 +8,11 @@ OutputDBConnection::OutputDBConnection(
       userPasswd(passwd), bufferSizeFactor(1), fOutput(out), portNum(port)
 {
     // Allocate buffers for data from database
-    fileDigest = new char[DIGEST_SIZE];
-    fileName = new char[NAME_SIZE];
-    fileVersion = new char[VERSION_SIZE];
-    osCombination = new char[VERSION_SIZE];
-    swPackage = new char[VERSION_SIZE];
+    fileDigest = std::unique_ptr<char[]>(new char[DIGEST_SIZE]);
+    fileName = std::unique_ptr<char[]>(new char[NAME_SIZE]);
+    fileVersion = std::unique_ptr<char[]>(new char[VERSION_SIZE]);
+    osCombination = std::unique_ptr<char[]>(new char[VERSION_SIZE]);
+    swPackage = std::unique_ptr<char[]>(new char[VERSION_SIZE]);
 
     // Initialize indicators for query execution
     error = std::vector<my_bool>(8, 0);
@@ -28,12 +28,6 @@ OutputDBConnection::~OutputDBConnection()
     if (mysql_stmt_close(getDigestFileName))
         printErr("\033[31mFAILED\033[0m to close MySQL statement\n");
     mysql_close(mysql);
-
-    delete[] fileDigest;
-    delete[] fileName;
-    delete[] fileVersion;
-    delete[] osCombination;
-    delete[] swPackage;
 }
 
 /* Format data obtained from database into convenient form */
@@ -50,23 +44,23 @@ int OutputDBConnection::formatData(std::string &digest, std::string &name, std::
     {
         if (!foundResult)
             foundResult = true;
-        if (!strcmp(fileDigest, digest.data()))
+        if (!strcmp(fileDigest.get(), digest.data()))
         {
-            if (!strcmp(fileName, name.data()))
+            if (!strcmp(fileName.get(), name.data()))
                 outputStr << "\tVALID_FILE\n";
             else
                 outputStr << "\tDIFFERENT_FILE_NAME_OR_FILE_LOCATION\n";
         }
         else
             outputStr << "\tSUSPICIOS_FILE\n";
-        outputStr << "\t\t" << fileName << ", " << fileCreated.day << "." << fileCreated.month << "."
+        outputStr << "\t\t" << fileName.get() << ", " << fileCreated.day << "." << fileCreated.month << "."
                   << fileCreated.year << " " << fileCreated.hour << ":" << fileCreated.minute << ":"
                   << fileCreated.second << ", " << fileChanged.day << "." << fileChanged.month << "."
                   << fileChanged.year << " " << fileChanged.hour << ":" << fileChanged.minute << ":"
                   << fileChanged.second << ", " << fileRegistered.day << "." << fileRegistered.month << "."
                   << fileRegistered.year << " " << fileRegistered.hour << ":" << fileRegistered.minute << ":"
-                  << fileRegistered.second << fileDigest << ", " << fileVersion << ", " << swPackage << ", "
-                  << osCombination << "\n";
+                  << fileRegistered.second << fileDigest.get() << ", " << fileVersion.get() << ", "
+                  << swPackage.get() << ", " << osCombination.get() << "\n";
         rc = mysql_stmt_fetch(getDigestFileName);
     }
 
@@ -127,14 +121,14 @@ int OutputDBConnection::getData(std::string &digest, std::string &name)
     }
 
     // Bind corresponding storage to atributes of result set
-    setBind(bind[0], MYSQL_TYPE_STRING, fileName, NAME_SIZE * bufferSizeFactor, &paramLen[0], isNull[0], error[0], noneInd);
+    setBind(bind[0], MYSQL_TYPE_STRING, fileName.get(), NAME_SIZE * bufferSizeFactor, &paramLen[0], isNull[0], error[0], noneInd);
     setBind(bind[1], MYSQL_TYPE_TIMESTAMP, &fileCreated, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[1], isNull[1], error[1], noneInd);
     setBind(bind[2], MYSQL_TYPE_TIMESTAMP, &fileChanged, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[2], isNull[2], error[2], noneInd);
     setBind(bind[3], MYSQL_TYPE_TIMESTAMP, &fileRegistered, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[3], isNull[3], error[3], noneInd);
-    setBind(bind[4], MYSQL_TYPE_STRING, fileDigest, DIGEST_SIZE, &paramLen[4], isNull[4], error[4], noneInd);
-    setBind(bind[5], MYSQL_TYPE_STRING, fileVersion, VERSION_SIZE * bufferSizeFactor, &paramLen[5], isNull[5], error[5], noneInd);
-    setBind(bind[6], MYSQL_TYPE_STRING, swPackage, VERSION_SIZE * bufferSizeFactor, &paramLen[6], isNull[6], error[6], noneInd);
-    setBind(bind[7], MYSQL_TYPE_STRING, osCombination, VERSION_SIZE * bufferSizeFactor, &paramLen[7], isNull[7], error[7], noneInd);
+    setBind(bind[4], MYSQL_TYPE_STRING, fileDigest.get(), DIGEST_SIZE, &paramLen[4], isNull[4], error[4], noneInd);
+    setBind(bind[5], MYSQL_TYPE_STRING, fileVersion.get(), VERSION_SIZE * bufferSizeFactor, &paramLen[5], isNull[5], error[5], noneInd);
+    setBind(bind[6], MYSQL_TYPE_STRING, swPackage.get(), VERSION_SIZE * bufferSizeFactor, &paramLen[6], isNull[6], error[6], noneInd);
+    setBind(bind[7], MYSQL_TYPE_STRING, osCombination.get(), VERSION_SIZE * bufferSizeFactor, &paramLen[7], isNull[7], error[7], noneInd);
 
     if (mysql_stmt_bind_result(getDigestFileName, bind))
     {
@@ -211,15 +205,10 @@ void OutputDBConnection::resizeBuffers()
 {
     bufferSizeFactor *= 2;
 
-    delete[] fileName;
-    delete[] fileVersion;
-    delete[] osCombination;
-    delete[] swPackage;
-
-    fileName = new char[NAME_SIZE * bufferSizeFactor];
-    fileVersion = new char[VERSION_SIZE * bufferSizeFactor];
-    osCombination = new char[VERSION_SIZE * bufferSizeFactor];
-    swPackage = new char[VERSION_SIZE * bufferSizeFactor];
+    fileName.reset(new char[NAME_SIZE * bufferSizeFactor]);
+    fileVersion.reset(new char[VERSION_SIZE * bufferSizeFactor]);
+    osCombination.reset(new char[VERSION_SIZE * bufferSizeFactor]);
+    swPackage.reset(new char[VERSION_SIZE * bufferSizeFactor]);
 }
 
 /* Fill in parameters of bind structure used for definition of statement variables substitution
