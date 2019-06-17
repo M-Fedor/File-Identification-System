@@ -6,6 +6,7 @@
 #include <termios.h>
 #include <unistd.h>
 
+int execute(ParallelExecutor *exec);
 int executeInFileMode();
 int executeInScannerMode();
 void getInputOpt();

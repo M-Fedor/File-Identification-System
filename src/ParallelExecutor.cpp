@@ -3,8 +3,9 @@
 /* Constructor; set the input component to "InputFile" and set any output component.
 Number of threads is determined by number of output component instances provided */
 ParallelExecutor::ParallelExecutor(
-    std::shared_ptr<InputFile> in, std::vector<std::shared_ptr<Output>> &outputInstList, const char *errFile)
-    : errFileName(errFile), done(false), interrupted(false), inFile(in), inScanner(NULL)
+    std::shared_ptr<InputFile> in, std::vector<std::shared_ptr<Output>> &outputInstList)
+    : verbose(false), done(false), interrupted(false), inFile(in), inScanner(NULL),
+      failedJobs(0), loadedJobs(0)
 {
     this->outputInstList.assign(outputInstList.begin(), outputInstList.end());
     nCores = outputInstList.size();
@@ -14,8 +15,9 @@ ParallelExecutor::ParallelExecutor(
 Number of threads is determined by minimum of number of output component and hash algorithm instances provided */
 ParallelExecutor::ParallelExecutor(
     std::shared_ptr<InputScanner> in, std::vector<std::shared_ptr<HashAlgorithm>> &hashAlgInstList,
-    std::vector<std::shared_ptr<Output>> &outputInstList, const char *errFile)
-    : errFileName(errFile), done(false), interrupted(false), inFile(NULL), inScanner(in)
+    std::vector<std::shared_ptr<Output>> &outputInstList)
+    : verbose(false), done(false), interrupted(false), inFile(NULL), inScanner(in),
+      failedJobs(0), loadedJobs(0)
 {
     this->hashAlgInstList.assign(hashAlgInstList.begin(), hashAlgInstList.end());
     this->outputInstList.assign(outputInstList.begin(), outputInstList.end());
@@ -24,9 +26,11 @@ ParallelExecutor::ParallelExecutor(
 
 /* Constructor; set input component to "InputScanner", set any hashAlgorithm and single OutputOffline instance. 
 This is preferred way to utilize "OutputOffline" output component. */
-ParallelExecutor::ParallelExecutor(std::shared_ptr<InputScanner> in, std::vector<std::shared_ptr<HashAlgorithm>> &hashAlgInstList,
-                                   std::shared_ptr<OutputOffline> out, const char *errFile)
-    : errFileName(errFile), done(false), interrupted(false), inFile(NULL), inScanner(in)
+ParallelExecutor::ParallelExecutor(
+    std::shared_ptr<InputScanner> in, std::vector<std::shared_ptr<HashAlgorithm>> &hashAlgInstList,
+    std::shared_ptr<OutputOffline> out)
+    : verbose(false), done(false), interrupted(false), inFile(NULL), inScanner(in),
+      failedJobs(0), loadedJobs(0)
 {
     this->hashAlgInstList.assign(hashAlgInstList.begin(), hashAlgInstList.end());
     nCores = hashAlgInstList.size();
@@ -54,13 +58,6 @@ int ParallelExecutor::init()
     }
     else
         return 1;
-
-    if (errFileName)
-    {
-        fError = OutputOffline(errFileName);
-        if (fError.init())
-            return 1;
-    }
 
     std::unique_lock<std::mutex> lock(queueAccessMutex);
     for (unsigned int i = 0; i < nCores; i++)
@@ -91,12 +88,8 @@ int ParallelExecutor::init()
 int ParallelExecutor::inputNextFile(
     std::ifstream &fDescriptor, std::string &digest, std::string &pathName)
 {
-    int rc;
-    if (inFile)
-        rc = inFile->inputNextFile(digest, pathName);
-    else
-        rc = inScanner->inputNextFile(fDescriptor, pathName);
-    return rc;
+    return (inFile) ? inFile->inputNextFile(digest, pathName)
+                    : inScanner->inputNextFile(fDescriptor, pathName);
 }
 
 /* Pop FileData structure from shared queue thread-safely; 
@@ -117,6 +110,13 @@ int ParallelExecutor::popSync(FileData &data)
     return 0;
 }
 
+void ParallelExecutor::printStatus(bool end)
+{
+    std::cout << "Loaded files:      [\033[32m" << loadedJobs << "\033[0m]\n"
+              << "Processing errors: [\033[31m" << failedJobs << "\033[0m]";
+    std::cout << ((!end) ? "\033[1A\033[30D" : "\n\n");
+}
+
 /* Push FileData structure to shared queue thread-safely */
 void ParallelExecutor::pushSync(FileData &data)
 {
@@ -130,7 +130,17 @@ bool ParallelExecutor::qAlmostEmptyPred() { return dataQueue.size() <
 bool ParallelExecutor::qReadyPred() { return dataQueue.size() >=
                                              MAX_QUEUE_LOAD_FACTOR * nCores; }
 
+int ParallelExecutor::setErrFile(const char *errFileName)
+{
+    fError = OutputOffline(errFileName);
+    if (fError.init())
+        return 1;
+    return 0;
+}
+
 void ParallelExecutor::setInterrupted() { interrupted.store(true); }
+
+void ParallelExecutor::setVerbose() { verbose = true; }
 
 /* Synchronize with other threads up to a point when ready for data processing */
 void ParallelExecutor::synchronize(ParallelExecutor *execInst)
@@ -139,7 +149,6 @@ void ParallelExecutor::synchronize(ParallelExecutor *execInst)
     execInst->queueAlmostEmpty.notify_all();
     while (!execInst->qReadyPred() && !execInst->done)
         execInst->queueReady.wait(lock);
-    lock.unlock();
 }
 
 /* Method being executed by worker thread when input component is set to "InputFile"; 
@@ -158,7 +167,10 @@ void ParallelExecutor::threadFnInFile(Output *out, ParallelExecutor *execInst)
             break;
         rc = out->outputData(data.digest, data.pathName);
         if (rc == 1)
+        {
             execInst->fError.outputData(data.digest, data.pathName);
+            execInst->failedJobs++;
+        }
     }
 }
 
@@ -168,7 +180,7 @@ and processes them using output component */
 void ParallelExecutor::threadFnInScanner(
     HashAlgorithm *hashAlg, Output *out, ParallelExecutor *execInst)
 {
-    char *buffer = new char[BUFFER_SIZE];
+    std::unique_ptr<char[]> buffer(new char[BUFFER_SIZE]);
     int rc;
     synchronize(execInst);
 
@@ -182,18 +194,20 @@ void ParallelExecutor::threadFnInScanner(
             break;
         while (data.fDescriptor.good())
         {
-            data.fDescriptor.read(buffer, BUFFER_SIZE);
-            hashAlg->inputData(buffer, data.fDescriptor.gcount());
+            data.fDescriptor.read(buffer.get(), BUFFER_SIZE);
+            hashAlg->inputData(buffer.get(), data.fDescriptor.gcount());
         }
         if (data.fDescriptor.eof())
         {
             data.digest = hashAlg->hashData();
             rc = out->outputData(data.digest, data.pathName);
             if (rc == 1)
+            {
                 execInst->fError.outputData(data.digest, data.pathName);
+                execInst->failedJobs++;
+            }
         }
     }
-    delete[] buffer;
 }
 
 /* Loads input using input component, controls interruption 
@@ -217,7 +231,10 @@ void ParallelExecutor::validate()
             }
             FileData data(fDescriptor, digest, pathName);
             pushSync(data);
+            loadedJobs++;
         }
+        if (verbose)
+            printStatus(false);
         queueReady.notify_all();
         while (!qAlmostEmptyPred() && !done)
             queueAlmostEmpty.wait(lock);
@@ -225,4 +242,6 @@ void ParallelExecutor::validate()
 
     for (unsigned int i = 0; i < nCores; i++)
         threadList[i].join();
+    if (verbose)
+        printStatus(true);
 }

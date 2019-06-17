@@ -1,21 +1,31 @@
 #include "FSS.h"
 
+int execute(ParallelExecutor *exec)
+{
+    if (exec->init())
+        return 1;
+    if (errFileName.size() != 0)
+        exec->setErrFile(errFileName.data());
+    if (verbose)
+        exec->setVerbose();
+
+    std::cout << "Executing...\n\n";
+    exec->validate();
+    return 0;
+}
+
 int executeInFileMode()
 {
     std::shared_ptr<InputFile> inFile(new InputFile(inputFileName.data(), regexTarget.data()));
     std::vector<std::shared_ptr<Output>> outputList;
     std::shared_ptr<OutputOffline> out(new OutputOffline(outputFileName.data()));
-    for (unsigned int i = 0; i < nCores; i++)
-        outputList.push_back(std::shared_ptr<Output>(new OutputDBConnection(
-            out.get(), hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL)));
-    std::shared_ptr<ParallelExecutor> exec =
-        (errFileName.size() == 0) ? std::shared_ptr<ParallelExecutor>(new ParallelExecutor(inFile, outputList))
-                                  : std::shared_ptr<ParallelExecutor>(new ParallelExecutor(inFile, outputList, errFileName.data()));
-    if (exec->init())
-        return 1;
-    exec->validate();
 
-    return 0;
+    for (unsigned int i = 0; i < nCores; i++)
+        outputList.emplace_back(new OutputDBConnection(
+            out.get(), hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL));
+    std::shared_ptr<ParallelExecutor> exec = std::make_shared<ParallelExecutor>(inFile, outputList);
+
+    return execute(exec.get());
 }
 
 int executeInScannerMode()
@@ -25,39 +35,32 @@ int executeInScannerMode()
     std::vector<std::shared_ptr<Output>> outputList;
     std::shared_ptr<OutputOffline> out(new OutputOffline(outputFileName.data()));
     std::shared_ptr<ParallelExecutor> exec;
+
     for (unsigned int i = 0; i < nCores; i++)
-        hashAlgList.push_back(std::shared_ptr<HashAlgorithm>(new SHA2()));
+        hashAlgList.emplace_back(new SHA2());
     if (offline)
-        exec = (errFileName.size() == 0)
-                   ? std::shared_ptr<ParallelExecutor>(new ParallelExecutor(inScanner, hashAlgList, out))
-                   : std::shared_ptr<ParallelExecutor>(new ParallelExecutor(inScanner, hashAlgList, out, errFileName.data()));
+        exec = std::make_shared<ParallelExecutor>(inScanner, hashAlgList, out);
     else
     {
         for (unsigned int i = 0; i < nCores; i++)
-            outputList.push_back(std::shared_ptr<OutputDBConnection>(new OutputDBConnection(
-                out.get(), hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL)));
-        exec = (errFileName.size() == 0)
-                   ? std::shared_ptr<ParallelExecutor>(new ParallelExecutor(inScanner, hashAlgList, outputList))
-                   : std::shared_ptr<ParallelExecutor>(new ParallelExecutor(inScanner, hashAlgList, outputList, errFileName.data()));
+            outputList.emplace_back(new OutputDBConnection(
+                out.get(), hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL));
+        exec = std::make_shared<ParallelExecutor>(inScanner, hashAlgList, outputList);
     }
 
-    if (exec->init())
-        return 1;
-    exec->validate();
-
-    return 0;
+    return execute(exec.get());
 }
 
 void getInputOpt()
 {
     if (inputFile)
     {
+        offline = false;
         do
         {
             (std::cout << "Path to input file []: ").flush();
             std::getline(std::cin, inputFileName);
         } while (inputFileName.size() == 0);
-        offline = false;
     }
     else
     {
@@ -146,7 +149,7 @@ int main(int argc, char **args)
 
     getInputOpt();
     getOutputOpt();
-    std::cout << "Initializing...\n";
+    std::cout << "\nInitializing...\n";
 
     if (inputFile)
         return executeInFileMode();
