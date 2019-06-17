@@ -36,7 +36,7 @@ int OutputOffline::init()
 int OutputOffline::outputData(std::string &data)
 {
     std::lock_guard<std::mutex> lock(mutex);
-    fOutput << data.data();
+    fOutput << data;
     fOutput.flush();
     return 0;
 }
@@ -45,8 +45,8 @@ int OutputOffline::outputData(std::string &data)
 int OutputOffline::outputData(std::string &digest, std::string &name)
 {
     std::lock_guard<std::mutex> lock(mutex);
-    fOutput << name.data() << "\n"
-            << digest.data() << "\n";
+    fOutput << name << "\n"
+            << digest << "\n";
     fOutput.flush();
     return 0;
 }

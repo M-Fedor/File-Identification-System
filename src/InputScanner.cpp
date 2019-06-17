@@ -4,7 +4,7 @@
 InputScanner::InputScanner(std::string &rootDirectory, const char *pattern)
 {
     rootDirectories.push_back(rootDirectory);
-    regex = pattern ? std::regex(pattern) : std::regex(".*");
+    regex = std::regex(pattern);
 }
 
 /* Constructor, set roots of serach as list of directories */
@@ -12,7 +12,7 @@ InputScanner::InputScanner(
     std::vector<std::string> &rootDirectories, const char *pattern)
 {
     this->rootDirectories.assign(rootDirectories.begin(), rootDirectories.end());
-    regex = pattern ? std::regex(pattern) : std::regex(".*");
+    regex = std::regex(pattern);
 }
 
 /* Destructor */
@@ -130,7 +130,7 @@ int InputScanner::inputNextFile(std::ifstream &fDescriptor, std::string &pathNam
     do
     {
         rc = findNextFDRec(fDescriptor, pathName);
-        match = std::regex_match(pathName.data(), regex);
+        match = std::regex_match(pathName, regex);
         if (!match && fDescriptor.is_open())
             fDescriptor.close();
     } while (rc == -2 || (!rc && !match));
@@ -142,7 +142,7 @@ int InputScanner::inputNextFile(std::ifstream &fDescriptor, std::string &pathNam
         do
         {
             rc = findNextFDRec(fDescriptor, pathName);
-            match = std::regex_match(pathName.data(), regex);
+            match = std::regex_match(pathName, regex);
             if (!match && fDescriptor.is_open())
                 fDescriptor.close();
         } while (rc == -2 || (!rc && !match));

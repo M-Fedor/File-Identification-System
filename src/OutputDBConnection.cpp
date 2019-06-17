@@ -42,8 +42,8 @@ int OutputDBConnection::formatData(std::string &digest, std::string &name, std::
     bool foundResult = false;
     std::stringstream outputStr;
 
-    outputStr << name.data() << "\n"
-              << digest.data() << "\n";
+    outputStr << name << "\n"
+              << digest << "\n";
 
     int rc = mysql_stmt_fetch(getDigestFileName);
     while (!rc)
@@ -103,10 +103,10 @@ int OutputDBConnection::getData(std::string &digest, std::string &name)
     paramLen[0] = digest.size();
     paramLen[1] = name.size();
 
-    std::unique_ptr<char> digestStr(new char[digest.size()]);
-    std::unique_ptr<char> nameStr(new char[name.size()]);
-    strncpy(digestStr.get(), digest.data(), digest.size());
-    strncpy(nameStr.get(), name.data(), name.size());
+    std::unique_ptr<char[]> digestStr(new char[digest.size()]);
+    std::unique_ptr<char[]> nameStr(new char[name.size()]);
+    std::strncpy(digestStr.get(), digest.data(), digest.size());
+    std::strncpy(nameStr.get(), name.data(), name.size());
 
     //Bind statement variables to their corresponding substitutions
     setBind(bind[0], MYSQL_TYPE_STRING, digestStr.get(), 0, &paramLen[0], isNull[0], error[0], ntsInd);
@@ -167,7 +167,7 @@ int OutputDBConnection::init()
                            " (SELECT file_name, file_created, file_changed, file_registered, file_digest,"
                            " file_version, sw_package, os_combination"
                            " FROM fileinfo WHERE file_name = ? AND file_digest != ?)";
-    if (mysql_stmt_prepare(getDigestFileName, getDigestFileNameStr, strlen(getDigestFileNameStr)))
+    if (mysql_stmt_prepare(getDigestFileName, getDigestFileNameStr, std::strlen(getDigestFileNameStr)))
     {
         printErr("\033[31mFAILED\033[0m to prepare MySQL statement\n");
         return 1;

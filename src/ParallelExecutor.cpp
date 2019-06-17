@@ -39,8 +39,6 @@ ParallelExecutor::~ParallelExecutor() {}
 /* Validate input parameters and initialize multithreaded environment */
 int ParallelExecutor::init()
 {
-    if (!nCores)
-        return 1;
     if (inFile)
     {
         if (inFile->init())
@@ -64,14 +62,10 @@ int ParallelExecutor::init()
     std::unique_lock<std::mutex> lock(queueAccessMutex);
     for (unsigned int i = 0; i < nCores; i++)
     {
-        if (!outputInstList[i])
-            return 1;
         if (outputInstList[i]->init())
             return 1;
         if (inScanner)
         {
-            if (!hashAlgInstList[i])
-                return 1;
             threadList.emplace_back(
                 threadFnInScanner, hashAlgInstList[i], outputInstList[i], this);
             queueAlmostEmpty.wait(lock);
