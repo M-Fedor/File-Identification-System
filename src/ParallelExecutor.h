@@ -19,15 +19,17 @@
 class ParallelExecutor
 {
 public:
-  ParallelExecutor(InputFile *in, std::vector<Output *> &outputInstList, const char *errFile = NULL);
-  ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
-                   std::vector<Output *> &outputInstList, const char *errFile = NULL);
-  ParallelExecutor(InputScanner *in, std::vector<HashAlgorithm *> &hashAlgInstList,
-                   OutputOffline *out, const char *errFile = NULL);
+  ParallelExecutor(std::shared_ptr<InputFile> in, std::vector<std::shared_ptr<Output>> &outputInstLists);
+  ParallelExecutor(std::shared_ptr<InputScanner> in, std::vector<std::shared_ptr<HashAlgorithm>> &hashAlgInstList,
+                   std::vector<std::shared_ptr<Output>> &outputInstList);
+  ParallelExecutor(std::shared_ptr<InputScanner> in, std::vector<std::shared_ptr<HashAlgorithm>> &hashAlgInstList,
+                   std::shared_ptr<OutputOffline> out);
   ~ParallelExecutor();
 
   int init();
+  int setErrFile(const char *errFileName);
   void setInterrupted();
+  void setVerbose();
   void validate();
 
 private:
@@ -48,9 +50,10 @@ private:
     std::string pathName;
   } FileData;
 
-  int popSync(FileData &data);
   int inputNextFile(
       std::ifstream &fDescriptor, std::string &digest, std::string &pathName);
+  int popSync(FileData &data);
+  void printStatus(bool end);
   void pushSync(FileData &data);
   bool qAlmostEmptyPred();
   bool qReadyPred();
@@ -59,9 +62,7 @@ private:
   static void threadFnInScanner(
       HashAlgorithm *hashAlg, Output *out, ParallelExecutor *execInst);
 
-  const char *errFileName;
-  InputFile *inFile;
-  InputScanner *inScanner;
+  bool verbose;
   OutputOffline fError;
   std::atomic<bool> done;
   std::atomic<bool> interrupted;
@@ -70,9 +71,13 @@ private:
   std::mutex queueAccessMutex;
   std::mutex queueEmptyMutex;
   std::queue<FileData> dataQueue;
-  std::vector<HashAlgorithm *> hashAlgInstList;
-  std::vector<Output *> outputInstList;
+  std::shared_ptr<InputFile> inFile;
+  std::shared_ptr<InputScanner> inScanner;
+  std::vector<std::shared_ptr<HashAlgorithm>> hashAlgInstList;
+  std::vector<std::shared_ptr<Output>> outputInstList;
   std::vector<std::thread> threadList;
+  unsigned int failedJobs;
+  unsigned int loadedJobs;
   unsigned int nCores;
 };
 

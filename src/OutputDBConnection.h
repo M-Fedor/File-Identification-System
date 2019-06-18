@@ -8,6 +8,7 @@
 #include "Output.h"
 #include "OutputOffline.h"
 #include <cstring>
+#include <memory>
 #include <mysql/mysql.h>
 #include <sstream>
 #include <vector>
@@ -33,11 +34,6 @@ private:
       MYSQL_BIND &bind, enum enum_field_types field_type, void *param, size_t paramSize,
       size_t *paramLen, my_bool &isNull, my_bool &error, char &ind);
 
-  char *fileDigest;
-  char *fileName;
-  char *fileVersion;
-  char *osCombination;
-  char *swPackage;
   const char *dbName;
   const char *getDigestFileNameStr;
   const char *hostName;
@@ -52,6 +48,11 @@ private:
   MYSQL_TIME fileChanged;
   MYSQL_TIME fileRegistered;
   OutputOffline *fOutput;
+  std::unique_ptr<char[]> fileDigest;
+  std::unique_ptr<char[]> fileName;
+  std::unique_ptr<char[]> fileVersion;
+  std::unique_ptr<char[]> osCombination;
+  std::unique_ptr<char[]> swPackage;
   std::vector<my_bool> error;
   std::vector<my_bool> isNull;
   std::vector<size_t> paramLen;

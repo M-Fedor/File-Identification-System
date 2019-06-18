@@ -11,8 +11,8 @@
 class InputScanner : public Input
 {
 public:
-  InputScanner(std::string &rootDirectory, const char *pattern = NULL);
-  InputScanner(std::vector<std::string> &rootDirectories, const char *pattern = NULL);
+  InputScanner(std::string &rootDirectory, const char *pattern = ".*");
+  InputScanner(std::vector<std::string> &rootDirectories, const char *pattern = ".*");
   ~InputScanner();
 
   int init();
