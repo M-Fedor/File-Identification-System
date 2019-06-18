@@ -56,9 +56,13 @@ make install
 | `install` | Install to `$INSTDIR` after compilation.      |
 | `clean`   | Remove compiled files for new clean building. |
 
-## Example of running testing executable
+## Example of running File System Scanner
 
 ```
 cd <project-dir>
-./build/testExec <search-root-directory>
+./build/fss <options>
 ```
+
+Application will obtain all the necessary configuration during user-interactive setup.
+
+For further information, please contact `matej.fedor.mf@gmail.com`.
