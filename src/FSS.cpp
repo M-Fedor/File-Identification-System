@@ -1,5 +1,6 @@
 #include "FSS.h"
 
+/* Executes data validation when object configuration is done */
 int execute(ParallelExecutor *exec)
 {
     if (exec->init())
@@ -14,6 +15,7 @@ int execute(ParallelExecutor *exec)
     return 0;
 }
 
+/* Instantiate necessary classes using user-defined parameters and prepare them for the execution */
 int executeInFileMode()
 {
     std::shared_ptr<InputFile> inFile(new InputFile(inputFileName.data(), regexTarget.data()));
@@ -28,6 +30,7 @@ int executeInFileMode()
     return execute(exec.get());
 }
 
+/* Instantiate necessary classes using user-defined parameters and prepare them for the execution */
 int executeInScannerMode()
 {
     std::shared_ptr<InputScanner> inScanner(new InputScanner(rootDirectories, regexTarget.data()));
@@ -51,6 +54,7 @@ int executeInScannerMode()
     return execute(exec.get());
 }
 
+/* Prompt user for input component configuration */
 void getInputOpt()
 {
     if (inputFile)
@@ -88,6 +92,7 @@ void getInputOpt()
     std::cout << "\n";
 }
 
+/* Prompt user for output component configuration */
 void getOutputOpt()
 {
     std::string value;
@@ -157,6 +162,7 @@ int main(int argc, char **args)
         return executeInScannerMode();
 }
 
+/* Print basic usage information */
 void printHelp()
 {
     std::cout << "File System Scanner \033[1mv 0.1\033[0m\n\n"
@@ -175,6 +181,7 @@ void printHelp()
               << "In case of any problems, please contact <matej.fedor.mf@gmail.com>.\n\n";
 }
 
+/* Print version and licence information */
 void printVersion()
 {
     std::cout << "File System Scanner \033[1mv0.1\033[0m\n"
@@ -183,6 +190,7 @@ void printVersion()
               << "There is NO WARRANTY, to the extent permitted by law.\n\n";
 }
 
+/* Resolve user-defined options when starting application */
 int resolveOptions(int argc, char **args)
 {
     const char *short_options = "fhoVv";
@@ -222,6 +230,7 @@ int resolveOptions(int argc, char **args)
     return 0;
 }
 
+/* Ensures secure input of line of characters with ECHOing switched off */
 void secureInput(std::string &input)
 {
     termios oldOpt;
