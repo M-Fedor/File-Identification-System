@@ -9,9 +9,14 @@
 #include "OutputOffline.h"
 #include <cstring>
 #include <memory>
-#include <mysql/mysql.h>
 #include <sstream>
 #include <vector>
+
+#if defined(__linux__)
+#include <mysql/mysql.h>
+#elif defined(_WIN32)
+#include <mysql.h>
+#endif
 
 /* Class implements reentrant communication with MariaDB/MySQL DBMS
 in order to determine output and outputs data in output file */

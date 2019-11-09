@@ -224,7 +224,7 @@ void OutputDBConnection::setBind(
     bind.u.indicator = &ind;
     if (paramLen)
     {
-        bind.length = paramLen;
+        bind.length = (unsigned long *)paramLen;
         bind.buffer_length = !paramSize ? *paramLen : paramSize;
     }
 }
