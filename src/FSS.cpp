@@ -79,7 +79,7 @@ void getInputOpt()
             rootDirectories.push_back(std::string(rootDir));
             do
             {
-                (std::cout << "Want to specify another directory? [y/Y]: ").flush();
+                (std::cout << "Want to specify another directory? [y/n]: ").flush();
                 std::getline(std::cin, rootDir);
             } while (rootDir.size() == 0);
         } while (!strcmp(rootDir.data(), "Y") || !strcmp(rootDir.data(), "y") ||
