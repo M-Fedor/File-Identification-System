@@ -1,7 +1,9 @@
 ifeq ($(OS), Windows_NT)
-	INSTDIR=$(HOMEPATH)/git/File-System-Scanner/build
+	INSTDIR=$(USERPROFILE)/git/File-System-Scanner/build
 	CRYPTOPP_INCLUDE_DIR=C:/Program\ Files/Cryptopp
+	CRYPTOPP_LIB_DIR=$(CRYPTOPP_INCLUDE_DIR)
 	MYSQL_INCLUDE_DIR=C:/Program\ Files/MariaDB/MariaDB\ Connector\ C\ 64-bit/include
+	MYSQL_LIB_DIR=C:/Program\ Files/MariaDB/MariaDB\ Connector\ C\ 64-bit/lib
 	TARGET=fss.exe
 endif
 ifeq ($(shell uname), Linux)
@@ -17,7 +19,8 @@ fss: src/FSS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp src/Output
 
 fss.exe: src/FSS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp src/Output.cpp src/OutputDBConnection.cpp\
 	src/OutputOffline.cpp src/HashAlgorithm.cpp src/SHA2.cpp src/ParallelExecutor.cpp
-	gcc -o $@ $? -I $(MYSQL_INCLUDE_DIR) -I $(CRYPTOPP_INCLUDE_DIR) -lcryptopp -lmysqlclient -lpthread -lstdc++ -pedantic -Wall -Wextra
+	gcc -o $@ $? -I $(CRYPTOPP_INCLUDE_DIR) -I $(MYSQL_INCLUDE_DIR) -L $(CRYPTOPP_LIB_DIR) -lcryptopp -L $(MYSQL_LIB_DIR)\
+    -llibmariadb -lpthread -lstdc++ -pedantic -Wall -Wextra
 
 .PHONY: clean install
 clean:

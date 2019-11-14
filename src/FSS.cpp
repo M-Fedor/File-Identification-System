@@ -148,7 +148,12 @@ void getOutputOpt()
 
 int main(int argc, char **args)
 {
-    int rc = resolveOptions(argc, args);
+#if defined(__linux__)
+    int rc = resolveOptionsUnix(argc, args);
+#elif defined(_WIN32)
+    int rc = resolveOptionsWin(argc, args);
+#endif
+
     if (rc != 0)
         return rc > 0 ? 0 : 1;
 
@@ -191,7 +196,8 @@ void printVersion()
 }
 
 /* Resolve user-defined options when starting application */
-int resolveOptions(int argc, char **args)
+#if defined(__linux__)
+int resolveOptionsUnix(int argc, char **args)
 {
     const char *short_options = "fhoVv";
     struct option long_options[] = {{"file", 0, NULL, 'f'},
@@ -229,17 +235,61 @@ int resolveOptions(int argc, char **args)
     }
     return 0;
 }
+#elif defined(_WIN32)
+int resolveOptionsWin(int argc, char **args)
+{
+    for (int i = 1; i < argc; i++)
+    {
+        if (!strcmp("-f", args[i]) || !strcmp("--file", args[i]))
+            inputFile = true;
+        else if (!strcmp("-h", args[i]) || !strcmp("--help", args[i]))
+        {
+            printHelp();
+            return 1;
+        }
+        else if (!strcmp("-o", args[i]) || !strcmp("--offline", args[i]))
+            offline = true;
+        else if (!strcmp("-V", args[i]) || !strcmp("--verbose", args[i]))
+            verbose = true;
+        else if (!strcmp("-v", args[i]) || !strcmp("--version", args[i]))
+        {
+            printVersion();
+            return 1;
+        }
+        else
+        {
+            printHelp();
+            return -1;
+        }
+    }
+
+    return 0;
+}
+#endif
 
 /* Ensures secure input of line of characters with ECHOing switched off */
 void secureInput(std::string &input)
 {
+#if defined(__linux__)
     termios oldOpt;
     tcgetattr(STDIN_FILENO, &oldOpt);
     termios newOpt = oldOpt;
     newOpt.c_lflag &= ~ECHO;
     tcsetattr(STDIN_FILENO, TCSANOW, &newOpt);
 
+#elif defined(_WIN32)
+    DWORD mode = 0;
+    HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
+    GetConsoleMode(hStdIn, &mode);
+    SetConsoleMode(hStdIn, mode & (~ENABLE_ECHO_INPUT));
+#endif
+
     std::getline(std::cin, input);
     std::cout << "\n";
+
+#if defined(__linux__)
     tcsetattr(STDIN_FILENO, TCSANOW, &oldOpt);
+#elif defined(_WIN32)
+    SetConsoleMode(hStdIn, mode);
+#endif
 }

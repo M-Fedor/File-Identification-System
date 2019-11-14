@@ -2,9 +2,14 @@
 #define FSS_h
 
 #include "ParallelExecutor.h"
+#include <unistd.h>
+
+#if defined(__linux__)
 #include <getopt.h>
 #include <termios.h>
-#include <unistd.h>
+#elif defined(_WIN32)
+#include <windows.h>
+#endif
 
 int execute(ParallelExecutor *exec);
 int executeInFileMode();
@@ -13,7 +18,8 @@ void getInputOpt();
 void getOutputOpt();
 void printHelp();
 void printVersion();
-int resolveOptions(int argc, char **args);
+int resolveOptionsUnix(int argc, char **args);
+int resolveOptionsWin(int argc, char **args);
 void secureInput(std::string &input);
 
 bool inputFile = false;
