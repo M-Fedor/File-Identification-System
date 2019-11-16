@@ -51,7 +51,7 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
         std::string path = absolutePaths.back();
         if (isDirectory(path.append(dirContent->d_name)))
         {
-            if (strcmp(dirContent->d_name, ".") != 0 && strcmp(dirContent->d_name, "..") != 0)
+            if (strcmp(dirContent->d_name, ".") && strcmp(dirContent->d_name, ".."))
             {
                 DIR *dirStream = opendir(path.append("/").data());
                 if (dirStream != NULL)

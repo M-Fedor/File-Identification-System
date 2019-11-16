@@ -18,7 +18,7 @@ void printColorized(const char *str, int color)
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hConsole, color);
     std::cerr << str;
-    SetConsoleTextAttribute(hConsole, BLACK);
+    SetConsoleTextAttribute(hConsole, WHITE);
 }
 #endif
 
@@ -67,8 +67,8 @@ void resetCursor()
     std::cout << "\033[1A\033[30D";
 #elif defined(_WIN32)
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    struct CONSOLE_SCREEN_BUFFER_INFO info;
-    struct COORD newPosition;
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    COORD newPosition;
 
     GetConsoleScreenBufferInfo(hConsole, &info);
     newPosition.X = 0;

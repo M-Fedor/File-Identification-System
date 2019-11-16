@@ -5,10 +5,10 @@
 #include <sstream>
 
 #if defined(_WIN32)
-#define BLACK 0
 #define GREEN 2
 #define RED 4
 #define YELLOW 6
+#define WHITE 7
 
 #include <windows.h>
 #endif
