@@ -14,11 +14,11 @@ endif
 default: $(TARGET)
 
 fss: src/FSS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp src/Output.cpp src/OutputDBConnection.cpp\
-	src/OutputOffline.cpp src/HashAlgorithm.cpp src/SHA2.cpp src/ParallelExecutor.cpp
+	src/OutputOffline.cpp src/HashAlgorithm.cpp src/SHA2.cpp src/ParallelExecutor.cpp src/Utils.cpp
 	gcc -o $@ $? -lcryptopp -lmysqlclient -lpthread -lstdc++ -pedantic -Wall -Wextra
 
 fss.exe: src/FSS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp src/Output.cpp src/OutputDBConnection.cpp\
-	src/OutputOffline.cpp src/HashAlgorithm.cpp src/SHA2.cpp src/ParallelExecutor.cpp
+	src/OutputOffline.cpp src/HashAlgorithm.cpp src/SHA2.cpp src/ParallelExecutor.cpp src/Utils.cpp
 	gcc -o $@ $? -I $(CRYPTOPP_INCLUDE_DIR) -I $(MYSQL_INCLUDE_DIR) -L $(CRYPTOPP_LIB_DIR) -lcryptopp -L $(MYSQL_LIB_DIR)\
     -llibmariadb -lpthread -lstdc++ -pedantic -Wall -Wextra
 

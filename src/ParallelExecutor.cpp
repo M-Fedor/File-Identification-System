@@ -112,9 +112,15 @@ int ParallelExecutor::popSync(FileData &data)
 
 void ParallelExecutor::printStatus(bool end)
 {
-    std::cout << "Loaded files:      [\033[32m" << loadedJobs << "\033[0m]\n"
-              << "Processing errors: [\033[31m" << failedJobs << "\033[0m]";
-    std::cout << ((!end) ? "\033[1A\033[30D" : "\n\n");
+    std::cout << "Loaded files:      [";
+    printGreen(std::to_string(loadedJobs).data());
+    std::cout << "]\nProcessing errors: [";
+    printRed(std::to_string(failedJobs).data());
+    std::cout << "]";
+    if (!end)
+        resetCursor();
+    else
+        std::cout << "\n\n";
 }
 
 /* Push FileData structure to shared queue thread-safely */

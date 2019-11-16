@@ -1,6 +1,7 @@
 #ifndef Output_h
 #define Output_h
 
+#include "Utils.h"
 #include <iostream>
 #include <string>
 

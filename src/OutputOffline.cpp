@@ -13,8 +13,8 @@ OutputOffline::~OutputOffline()
     if (fOutput.is_open())
         fOutput.close();
     if (fOutput.fail())
-        std::cerr << "\033[31mFAILED\033[0m to close file \033[1m"
-                  << fileName << "\033[0m\n";
+        printFailed(static_cast<std::ostringstream &>(
+            std::ostringstream() << "Close file " << fileName));
 }
 
 /* Open output file, report any failures */
@@ -24,8 +24,8 @@ int OutputOffline::init()
         fOutput.open(fileName, std::ios::trunc);
     if (fOutput.fail())
     {
-        std::cerr << "\033[31mFAILED\033[0m to open \033[1m"
-                  << fileName << "\033[0m\n";
+        printFailed(static_cast<std::ostringstream &>(
+            std::ostringstream() << "Open " << fileName));
         return 1;
     }
 

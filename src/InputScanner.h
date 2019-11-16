@@ -4,7 +4,6 @@
 #include "Input.h"
 #include <cstring>
 #include <dirent.h>
-#include <sstream>
 #include <vector>
 
 #if defined(__linux__)

@@ -1,9 +1,11 @@
 #ifndef Input_h
 #define Input_h
 
+#include "Utils.h"
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include <sstream>
 #include <string>
 
 /* Interface for data input component */

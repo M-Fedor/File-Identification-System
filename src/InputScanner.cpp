@@ -22,8 +22,7 @@ InputScanner::~InputScanner()
     {
         if (closedir(directoryStreams.back()) == -1)
             printErr(errno, static_cast<std::ostringstream &>(
-                                std::ostringstream() << "\033[31mFAILED\033[0m to close directory\033[1m "
-                                                     << absolutePaths.back().data() << "\033[0m\n"));
+                                std::ostringstream() << "Close directory " << absolutePaths.back().data()));
         directoryStreams.pop_back();
         absolutePaths.pop_back();
     }
@@ -43,11 +42,9 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
         {
             if (closedir(directoryStreams.back()) == -1)
                 printErr(errno, static_cast<std::ostringstream &>(
-                                    std::ostringstream() << "\033[31mFAILED\033[0m to close directory\033[1m"
-                                                         << absolutePaths.back().data() << "\033[0m\n"));
+                                    std::ostringstream() << "Close directory " << absolutePaths.back().data()));
             directoryStreams.pop_back();
             absolutePaths.pop_back();
-            // If closed directory is subdirectory of another opened one, continue searching that one
             return !directoryStreams.empty() ? findNextFDRec(fDescriptor, pathName) : -1;
         }
 
@@ -65,8 +62,7 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
                 }
                 else
                     printErr(errno, static_cast<std::ostringstream &>(
-                                        std::ostringstream() << "\033[31mFAILED\033[0m to open directory\033[1m"
-                                                             << path.data() << "\033[0m\n"));
+                                        std::ostringstream() << "Open directory " << path.data()));
             }
         }
         else // Is the next item in directory anything else?
@@ -78,14 +74,13 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
                 return 0;
             }
             else
-                std::cerr << "\033[31mFAILED\033[0m to open file\033[1m"
-                          << path.data() << "\033[0m\n";
+                printFailed(static_cast<std::ostringstream &>(
+                    std::ostringstream() << "Open file " << path.data()));
         }
     }
     else
         printErr(errno, static_cast<std::ostringstream &>(
-                            std::ostringstream() << "\033[31mFAILED\033[0m to read from directory\033[1m"
-                                                 << absolutePaths.back().data() << "\033[0m.\n"));
+                            std::ostringstream() << "Read from directory " << absolutePaths.back().data()));
     return -2; // Return -2 on system error
 }
 
@@ -105,8 +100,7 @@ int InputScanner::init()
         dirStream = opendir(path.data());
         if (dirStream == NULL)
             printErr(errno, static_cast<std::ostringstream &>(
-                                std::ostringstream() << "\033[31mFAILED\033[0m to open directory\033[1m"
-                                                     << rootDirectories.back().data() << "\033[0m\n"));
+                                std::ostringstream() << "Open directory " << rootDirectories.back().data()));
         rootDirectories.pop_back();
     } while (dirStream == NULL && rootDirectories.size() != 0);
 
@@ -168,5 +162,6 @@ bool InputScanner::isDirectory(std::string path)
 /* Print error details */
 void InputScanner::printErr(int errNum, const std::ostringstream &errInfo)
 {
-    std::cerr << errInfo.str().data() << " - " << strerror(errNum) << "\n";
+    printFailed(errInfo);
+    std::cerr << " - " << strerror(errNum) << "\n";
 }
