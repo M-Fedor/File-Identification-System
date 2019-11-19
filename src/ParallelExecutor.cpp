@@ -1,11 +1,12 @@
 #include "ParallelExecutor.h"
 
+std::atomic<bool> ParallelExecutor::interrupted(false);
+
 /* Constructor; set the input component to "InputFile" and set any output component.
 Number of threads is determined by number of output component instances provided */
 ParallelExecutor::ParallelExecutor(
     std::shared_ptr<InputFile> in, std::vector<std::shared_ptr<Output>> &outputInstList)
-    : verbose(false), done(false), interrupted(false), inFile(in), inScanner(NULL),
-      failedJobs(0), loadedJobs(0)
+    : verbose(false), done(false), inFile(in), inScanner(NULL), failedJobs(0), loadedJobs(0)
 {
     this->outputInstList.assign(outputInstList.begin(), outputInstList.end());
     nCores = outputInstList.size();
@@ -16,8 +17,7 @@ Number of threads is determined by minimum of number of output component and has
 ParallelExecutor::ParallelExecutor(
     std::shared_ptr<InputScanner> in, std::vector<std::shared_ptr<HashAlgorithm>> &hashAlgInstList,
     std::vector<std::shared_ptr<Output>> &outputInstList)
-    : verbose(false), done(false), interrupted(false), inFile(NULL), inScanner(in),
-      failedJobs(0), loadedJobs(0)
+    : verbose(false), done(false), inFile(NULL), inScanner(in), failedJobs(0), loadedJobs(0)
 {
     this->hashAlgInstList.assign(hashAlgInstList.begin(), hashAlgInstList.end());
     this->outputInstList.assign(outputInstList.begin(), outputInstList.end());
@@ -29,8 +29,7 @@ This is preferred way to utilize "OutputOffline" output component. */
 ParallelExecutor::ParallelExecutor(
     std::shared_ptr<InputScanner> in, std::vector<std::shared_ptr<HashAlgorithm>> &hashAlgInstList,
     std::shared_ptr<OutputOffline> out)
-    : verbose(false), done(false), interrupted(false), inFile(NULL), inScanner(in),
-      failedJobs(0), loadedJobs(0)
+    : verbose(false), done(false), inFile(NULL), inScanner(in), failedJobs(0), loadedJobs(0)
 {
     this->hashAlgInstList.assign(hashAlgInstList.begin(), hashAlgInstList.end());
     nCores = hashAlgInstList.size();
@@ -58,6 +57,9 @@ int ParallelExecutor::init()
     }
     else
         return 1;
+
+    signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
 
     std::unique_lock<std::mutex> lock(queueAccessMutex);
     for (unsigned int i = 0; i < nCores; i++)
@@ -144,9 +146,9 @@ int ParallelExecutor::setErrFile(const char *errFileName)
     return 0;
 }
 
-void ParallelExecutor::setInterrupted() { interrupted.store(true); }
-
 void ParallelExecutor::setVerbose() { verbose = true; }
+
+void ParallelExecutor::signalHandler(int /* signal */) { interrupted.store(true); }
 
 /* Synchronize with other threads up to a point when ready for data processing */
 void ParallelExecutor::synchronize(ParallelExecutor *execInst)
@@ -164,7 +166,7 @@ void ParallelExecutor::threadFnInFile(Output *out, ParallelExecutor *execInst)
     synchronize(execInst);
     int rc;
 
-    while (!execInst->interrupted)
+    while (!interrupted)
     {
         if (execInst->qAlmostEmptyPred())
             execInst->queueAlmostEmpty.notify_all();
@@ -178,6 +180,7 @@ void ParallelExecutor::threadFnInFile(Output *out, ParallelExecutor *execInst)
             execInst->failedJobs++;
         }
     }
+    execInst->queueAlmostEmpty.notify_all();
 }
 
 /* Method being executed by worker thread when input component is set to "InputScanner"
@@ -190,7 +193,7 @@ void ParallelExecutor::threadFnInScanner(
     int rc;
     synchronize(execInst);
 
-    while (!execInst->interrupted)
+    while (!interrupted)
     {
         if (execInst->qAlmostEmptyPred())
             execInst->queueAlmostEmpty.notify_all();
@@ -214,6 +217,7 @@ void ParallelExecutor::threadFnInScanner(
             }
         }
     }
+    execInst->queueAlmostEmpty.notify_all();
 }
 
 /* Loads input using input component, controls interruption 
@@ -242,7 +246,7 @@ void ParallelExecutor::validate()
         if (verbose)
             printStatus(false);
         queueReady.notify_all();
-        while (!qAlmostEmptyPred() && !done)
+        while (!qAlmostEmptyPred() && !done && !interrupted)
             queueAlmostEmpty.wait(lock);
     }
 

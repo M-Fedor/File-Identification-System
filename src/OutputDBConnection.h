@@ -9,7 +9,6 @@
 #include "OutputOffline.h"
 #include <cstring>
 #include <memory>
-#include <sstream>
 #include <vector>
 
 #if defined(__linux__)

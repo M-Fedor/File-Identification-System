@@ -2,7 +2,6 @@
 #define Output_h
 
 #include "Utils.h"
-#include <iostream>
 #include <string>
 
 /* Interface for data output component */
