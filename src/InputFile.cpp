@@ -10,8 +10,8 @@ InputFile::~InputFile()
     fInput.clear(std::_S_goodbit);
     fInput.close();
     if (fInput.fail())
-        std::cerr << "\033[31mFAILED\033[0m to close file\033[1m"
-                  << srcFileName << "\033[0m\n";
+        printFailed(static_cast<std::ostringstream &>(
+            std::ostringstream() << "Close file " << srcFileName));
 }
 
 /* Initialize source file reader and report any failures */
@@ -20,8 +20,8 @@ int InputFile::init()
     fInput.open(srcFileName);
     if (fInput.fail())
     {
-        std::cerr << "\033[31mFAILED\033[0m to open \033[1m"
-                  << srcFileName << "\033[0m\n";
+        printFailed(static_cast<std::ostringstream &>(
+            std::ostringstream() << "Open " << srcFileName));
         return 1;
     }
 

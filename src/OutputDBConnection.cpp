@@ -26,7 +26,7 @@ OutputDBConnection::OutputDBConnection(
 OutputDBConnection::~OutputDBConnection()
 {
     if (mysql_stmt_close(getDigestFileName))
-        printErr("\033[31mFAILED\033[0m to close MySQL statement\n");
+        printErr("Close MySQL statement");
     mysql_close(mysql);
 }
 
@@ -66,12 +66,12 @@ int OutputDBConnection::formatData(std::string &digest, std::string &name, std::
 
     if (rc == 1)
     {
-        printErr("\033[31mFAILED\033[0m to fetch MySQL statement results\n");
+        printErr("Fetch MySQL statement results");
         return 1;
     }
     else if (rc == MYSQL_DATA_TRUNCATED)
     {
-        std::cout << "\033[33mWARNING:\033[0m data truncated, resizing buffers...\n";
+        printWarning("Data truncated, resizing buffers");
         mysql_stmt_data_seek(getDigestFileName, 0);
         resizeBuffers();
         return 2;
@@ -111,12 +111,12 @@ int OutputDBConnection::getData(std::string &digest, std::string &name)
 
     if (mysql_stmt_bind_param(getDigestFileName, bind))
     {
-        printErr("\033[31mFAILED\033[0m to bind MySQL statement\n");
+        printErr("Bind MySQL statement");
         return 1;
     }
     if (mysql_stmt_execute(getDigestFileName))
     {
-        printErr("\033[31mFAILED\033[0m to execute MySQL statement\n");
+        printErr("Execute MySQL statement");
         return 1;
     }
 
@@ -132,12 +132,12 @@ int OutputDBConnection::getData(std::string &digest, std::string &name)
 
     if (mysql_stmt_bind_result(getDigestFileName, bind))
     {
-        printErr("\033[31mFAILED\033[0m to bind MySQL statement results\n");
+        printErr("Bind MySQL statement results");
         return 1;
     }
     if (mysql_stmt_store_result(getDigestFileName)) // Fetch the entire result set at once
     {
-        printErr("\033[31mFAILED\033[0m to store MySQL statement results\n");
+        printErr("Store MySQL statement results");
         return 1;
     }
 
@@ -150,7 +150,7 @@ int OutputDBConnection::init()
     mysql = mysql_init(NULL);
     if (!mysql_real_connect(mysql, hostName, userName, userPasswd, dbName, portNum, unixSocket, 0))
     {
-        printErr("\033[31mFAILED\033[0m to open MySQL connection\n");
+        printErr("Open MySQL connection");
         return 1;
     }
 
@@ -163,7 +163,7 @@ int OutputDBConnection::init()
                            " FROM fileinfo WHERE file_name = ? AND file_digest != ?)";
     if (mysql_stmt_prepare(getDigestFileName, getDigestFileNameStr, std::strlen(getDigestFileNameStr)))
     {
-        printErr("\033[31mFAILED\033[0m to prepare MySQL statement\n");
+        printErr("Prepare MySQL statement");
         return 1;
     }
     if (fOutput->init())
@@ -194,7 +194,7 @@ int OutputDBConnection::outputData(std::string &digest, std::string &name)
 /* Print error details */
 void OutputDBConnection::printErr(const char *errInfo)
 {
-    std::cerr << errInfo;
+    printFailed(errInfo);
     std::cerr << "Error(" << mysql_errno(mysql) << ") ["
               << mysql_sqlstate(mysql) << "] \"" << mysql_error(mysql) << "\"\n";
 }
@@ -224,7 +224,7 @@ void OutputDBConnection::setBind(
     bind.u.indicator = &ind;
     if (paramLen)
     {
-        bind.length = paramLen;
+        bind.length = (unsigned long *)paramLen;
         bind.buffer_length = !paramSize ? *paramLen : paramSize;
     }
 }

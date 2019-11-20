@@ -12,6 +12,7 @@
 #include "SHA2.h"
 #include <atomic>
 #include <condition_variable>
+#include <csignal>
 #include <queue>
 #include <thread>
 
@@ -28,7 +29,6 @@ public:
 
   int init();
   int setErrFile(const char *errFileName);
-  void setInterrupted();
   void setVerbose();
   void validate();
 
@@ -57,6 +57,7 @@ private:
   void pushSync(FileData &data);
   bool qAlmostEmptyPred();
   bool qReadyPred();
+  static void signalHandler(int signal);
   static void synchronize(ParallelExecutor *execInst);
   static void threadFnInFile(Output *out, ParallelExecutor *execInst);
   static void threadFnInScanner(
@@ -65,7 +66,7 @@ private:
   bool verbose;
   OutputOffline fError;
   std::atomic<bool> done;
-  std::atomic<bool> interrupted;
+  static std::atomic<bool> interrupted;
   std::condition_variable queueAlmostEmpty;
   std::condition_variable queueReady;
   std::mutex queueAccessMutex;

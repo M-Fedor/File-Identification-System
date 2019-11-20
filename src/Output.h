@@ -1,7 +1,7 @@
 #ifndef Output_h
 #define Output_h
 
-#include <iostream>
+#include "Utils.h"
 #include <string>
 
 /* Interface for data output component */
