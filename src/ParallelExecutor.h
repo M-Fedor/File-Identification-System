@@ -7,7 +7,7 @@
 
 #include "InputFile.h"
 #include "InputScanner.h"
-#include "OutputDBConnection.h"
+#include "OutputValidateDB.h"
 #include "OutputOffline.h"
 #include "SHA2.h"
 #include <atomic>

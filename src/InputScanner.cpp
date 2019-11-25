@@ -111,8 +111,7 @@ int InputScanner::init()
         absolutePaths.push_back(path);
         return 0;
     }
-    else
-        return -1;
+    return -1;
 }
 
 /* Iterate through file system until some file is opened successfuly
@@ -149,13 +148,9 @@ bool InputScanner::isDirectory(std::string path)
 {
 #if defined(__linux__)
     stat(path.data(), &buffer);
-    if (S_ISDIR(buffer.st_mode))
-        return true;
-    return false;
+    return S_ISDIR(buffer.st_mode) ? true : false;
 #elif defined(_WIN32)
-    if (GetFileAttributesA(path.data()) == FILE_ATTRIBUTE_DIRECTORY)
-        return true;
-    return false;
+    return (GetFileAttributesA(path.data()) == FILE_ATTRIBUTE_DIRECTORY) ? true : false;
 #endif
 }
 

@@ -23,8 +23,10 @@ int executeInFileMode()
     std::shared_ptr<OutputOffline> out(new OutputOffline(outputFileName.data()));
 
     for (unsigned int i = 0; i < nCores; i++)
-        outputList.emplace_back(new OutputDBConnection(
-            out.get(), hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL));
+    {
+        DBConnection conn(hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL);
+        outputList.emplace_back(new OutputValidateDB(conn, out));
+    }
     std::shared_ptr<ParallelExecutor> exec = std::make_shared<ParallelExecutor>(inFile, outputList);
 
     return execute(exec.get());
@@ -46,8 +48,10 @@ int executeInScannerMode()
     else
     {
         for (unsigned int i = 0; i < nCores; i++)
-            outputList.emplace_back(new OutputDBConnection(
-                out.get(), hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL));
+        {
+            DBConnection conn(hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL);
+            outputList.emplace_back(new OutputValidateDB(conn, out));
+        }
         exec = std::make_shared<ParallelExecutor>(inScanner, hashAlgList, outputList);
     }
 
@@ -161,10 +165,7 @@ int main(int argc, char **args)
     getOutputOpt();
     std::cout << "\nInitializing...\n";
 
-    if (inputFile)
-        return executeInFileMode();
-    else
-        return executeInScannerMode();
+    return inputFile ? executeInFileMode() : executeInScannerMode();
 }
 
 /* Print basic usage information */
