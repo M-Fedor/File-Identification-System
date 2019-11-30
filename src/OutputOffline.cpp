@@ -23,13 +23,10 @@ int OutputOffline::init()
     if (!fOutput.is_open())
         fOutput.open(fileName, std::ios::trunc);
     if (fOutput.fail())
-    {
-        printFailed(static_cast<std::ostringstream &>(
+        return printFailed(static_cast<std::ostringstream &>(
             std::ostringstream() << "Open " << fileName));
-        return 1;
-    }
 
-    return 0;
+    return OK;
 }
 
 /* Output data as they are */
@@ -38,7 +35,7 @@ int OutputOffline::outputData(std::string &data)
     std::lock_guard<std::mutex> lock(mutex);
     fOutput << data;
     fOutput.flush();
-    return 0;
+    return OK;
 }
 
 /* Create formatted output */
@@ -48,5 +45,5 @@ int OutputOffline::outputData(std::string &digest, std::string &name)
     fOutput << name << "\n"
             << digest << "\n";
     fOutput.flush();
-    return 0;
+    return OK;
 }

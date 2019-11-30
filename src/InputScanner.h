@@ -7,8 +7,10 @@
 #include <vector>
 
 #if defined(__linux__)
+#define DEFAULT_SEPARATOR "/"
 #include <sys/stat.h>
 #elif defined(_WIN32)
+#define DEFAULT_SEPARATOR "\\"
 #include <fileapi.h>
 #endif
 

@@ -7,8 +7,9 @@
 
 #include "InputFile.h"
 #include "InputScanner.h"
-#include "OutputValidateDB.h"
 #include "OutputOffline.h"
+#include "OutputUpdateDB.h"
+#include "OutputValidateDB.h"
 #include "SHA2.h"
 #include <atomic>
 #include <condition_variable>

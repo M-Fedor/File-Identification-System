@@ -34,7 +34,7 @@ public:
     void setSize(int nameSize, int digestSize, int versionSize);
 
 private:
-    void printErr(const char *errInfo);
+    int printErr(const char *errInfo);
     void setBind(
         MYSQL_BIND &bind, enum enum_field_types field_type, void *param, size_t paramSize,
         size_t *paramLen, my_bool &isNull, my_bool &error, char &ind);

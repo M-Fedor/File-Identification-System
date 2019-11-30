@@ -19,22 +19,19 @@ int InputFile::init()
 {
     fInput.open(srcFileName);
     if (fInput.fail())
-    {
-        printFailed(static_cast<std::ostringstream &>(
+        return printFailed(static_cast<std::ostringstream &>(
             std::ostringstream() << "Open " << srcFileName));
-        return 1;
-    }
 
-    return 0;
+    return OK;
 }
 
 /* Load next file's credentials, fill absolute path of the file and 
 corresponding file identifier in pathname and digest respectively,
-return -1 when no more files are in the list */
+return UNDEFINED when no more files are in the list */
 int InputFile::inputNextFile(std::string &digest, std::string &pathName)
 {
     if (fInput.peek() == EOF)
-        return -1;
+        return UNDEFINED;
 
     do
     {
@@ -45,5 +42,5 @@ int InputFile::inputNextFile(std::string &digest, std::string &pathName)
         std::getline(fInput, digest);
     } while (!std::regex_match(digest, regex));
 
-    return 0;
+    return OK;
 }

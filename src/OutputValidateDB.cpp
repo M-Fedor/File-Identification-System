@@ -51,7 +51,7 @@ int OutputValidateDB::formatData(std::string &digest, std::string &name, std::st
     }
 
     if (rc == 1)
-        return 1;
+        return FAIL;
     else if (rc == 2)
     {
         printWarning("Data truncated, resizing buffers");
@@ -63,7 +63,7 @@ int OutputValidateDB::formatData(std::string &digest, std::string &name, std::st
         outputStr << "FILE_NOT_FOUND\n";
     data = outputStr.str();
 
-    return 0;
+    return OK;
 }
 
 /* Initialize communication with DBMS, open output file and prepare statement to be executed, report any failures */
@@ -75,36 +75,36 @@ int OutputValidateDB::init()
                         " (SELECT file_name, file_created, file_changed, file_registered, file_digest,"
                         " file_version, sw_package, os_combination"
                         " FROM fileinfo WHERE file_name = ? AND file_digest != ?)"))
-        return 1;
+        return FAIL;
     connection.setSize(NAME_SIZE, DIGEST_SIZE, VERSION_SIZE);
 
     if (fOutput->init())
-        return 1;
+        return FAIL;
 
-    return 0;
+    return OK;
 }
 
 /* Get data from database and output them in output file */
 int OutputValidateDB::outputData(std::string &digest, std::string &name)
 {
     if (connection.executeSelect(digest, name))
-        return 1;
+        return FAIL;
     if (connection.bindResults(
             fileCreated, fileChanged, fileRegistered, fileDigest.get(),
             fileName.get(), fileVersion.get(), osCombination.get(), swPackage.get()))
-        return 1;
+        return FAIL;
 
-    int rc = 0;
+    int rc = OK;
     std::string data;
     do
     {
         rc = formatData(digest, name, data);
-        if (rc == 1)
-            return rc;
+        if (rc == FAIL)
+            return FAIL;
     } while (rc == 2);
 
     fOutput->outputData(data);
-    return 0;
+    return OK;
 }
 
 /* Resize buffers for data from database, allows us to adapt to various conditions

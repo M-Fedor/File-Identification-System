@@ -1,15 +1,17 @@
 #include "Utils.h"
 
-void printFailed(const char *errInfo)
+int printFailed(const char *errInfo)
 {
     std::cerr << errInfo << " - ";
     printRed("FAILED\n");
+    return FAIL;
 }
 
-void printFailed(const std::ostringstream &errInfo)
+int printFailed(const std::ostringstream &errInfo)
 {
     std::cerr << errInfo.str() << " - ";
     printRed("FAILED\n");
+    return FAIL;
 }
 
 #if defined(_WIN32)

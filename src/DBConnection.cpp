@@ -43,17 +43,12 @@ int DBConnection::bindResults(
     setBind(bind[7], MYSQL_TYPE_STRING, osCombination, versionSize, &paramLen[7], isNull[7], error[7], noneInd);
 
     if (mysql_stmt_bind_result(stmt, bind))
-    {
-        printErr("Bind MySQL statement results");
-        return 1;
-    }
-    if (mysql_stmt_store_result(stmt)) // Fetch the entire result set at once
-    {
-        printErr("Store MySQL statement results");
-        return 1;
-    }
+        return printErr("Bind MySQL statement results");
 
-    return 0;
+    if (mysql_stmt_store_result(stmt)) // Fetch the entire result set at once
+        return printErr("Store MySQL statement results");
+
+    return OK;
 }
 
 /* Set and execute the prepared statement in order to get data from database */
@@ -81,28 +76,20 @@ int DBConnection::executeSelect(std::string &digest, std::string &name)
         setBind(bind[i], MYSQL_TYPE_STRING, NULL, 0, NULL, isNull[1], error[0], ignoreInd);
 
     if (mysql_stmt_bind_param(stmt, bind))
-    {
-        printErr("Bind MySQL statement");
-        return 1;
-    }
-    if (mysql_stmt_execute(stmt))
-    {
-        printErr("Execute MySQL statement");
-        return 1;
-    }
+        return printErr("Bind MySQL statement");
 
-    return 0;
+    if (mysql_stmt_execute(stmt))
+        return printErr("Execute MySQL statement");
+
+    return OK;
 }
 
 int DBConnection::fetchData()
 {
     int rc = mysql_stmt_fetch(stmt);
 
-    if (rc == 1)
-    {
-        printErr("Fetch MySQL statement results");
-        return 1;
-    }
+    if (rc == FAIL)
+        return printErr("Fetch MySQL statement results");
     else if (rc == MYSQL_DATA_TRUNCATED)
     {
         mysql_stmt_data_seek(stmt, 0);
@@ -116,27 +103,22 @@ int DBConnection::init(const char *query)
 {
     mysql = mysql_init(NULL);
     if (!mysql_real_connect(mysql, hostName, userName, userPasswd, dbName, portNum, unixSocket, 0))
-    {
-        printErr("Open MySQL connection");
-        return 1;
-    }
+        return printErr("Open MySQL connection");
 
     stmt = mysql_stmt_init(mysql);
     if (mysql_stmt_prepare(stmt, query, std::strlen(query)))
-    {
-        printErr("Prepare MySQL statement");
-        return 1;
-    }
+        return printErr("Prepare MySQL statement");
 
-    return 0;
+    return OK;
 }
 
 /* Print error details */
-void DBConnection::printErr(const char *errInfo)
+int DBConnection::printErr(const char *errInfo)
 {
     printFailed(errInfo);
     std::cerr << "Error(" << mysql_errno(mysql) << ") ["
               << mysql_sqlstate(mysql) << "] \"" << mysql_error(mysql) << "\"\n";
+    return FAIL;
 }
 
 /* Fill in parameters of bind structure used for definition of statement variables substitution
