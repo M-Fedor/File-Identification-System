@@ -24,6 +24,7 @@ private:
   void evaluateData(std::string &digest, std::string &name, std::stringstream &str);
   int formatData(std::string &digest, std::string &name, std::string &data);
   int getData(std::string &digest, std::string &name);
+  void makePartialOut(std::string &digest, std::string &name, std::stringstream &str);
   void resizeBuffers();
 
   DBConnection connection;

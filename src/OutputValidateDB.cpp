@@ -6,14 +6,13 @@ OutputValidateDB::OutputValidateDB(DBConnection &conn, std::shared_ptr<OutputOff
 {
     connection = std::move(conn);
 
-    fileDigest = std::unique_ptr<char[]>(new char[DIGEST_SIZE]);
-    fileName = std::unique_ptr<char[]>(new char[NAME_SIZE]);
-    fileType = std::unique_ptr<char[]>(new char[DIGEST_SIZE]);
+    fileDigest.reset(new char[DIGEST_SIZE]);
+    fileName.reset(new char[NAME_SIZE]);
+    fileType.reset(new char[DIGEST_SIZE]);
 
     timestamps = std::vector<MYSQL_TIME>(TIMESTAMPS_INFO_ATTR_COUNT);
-    versionInfo = std::vector<std::shared_ptr<char[]>>(VERSION_INFO_ATTR_COUNT);
-    for (auto &info : versionInfo)
-        info = std::shared_ptr<char[]>(new char[VERSION_SIZE]);
+    for (int i = 0; i< VERSION_INFO_ATTR_COUNT; i++)
+        versionInfo.emplace_back(new char[VERSION_SIZE]);
 }
 
 /* Destructor */
@@ -45,15 +44,7 @@ int OutputValidateDB::formatData(std::string &digest, std::string &name, std::st
     resultNotFound = !rc ? false : true;
     while (!rc)
     {
-        evaluateData(digest, name, outputStr);
-        outputStr << "\t\t" << fileName.get() << ", ";
-        for (auto &time : timestamps)
-            outputStr << time.day << "." << time.month << "." << time.year << " "
-                      << time.hour << ":" << time.minute << ":" << time.second << ", ";
-        outputStr << fileDigest.get() << ", " << fileType.get();
-        for (auto &info : versionInfo)
-            outputStr << ", " << info.get();
-        outputStr << "\n";
+        makePartialOut(digest, name, outputStr);
         rc = connection.fetchData();
     }
 
@@ -103,6 +94,21 @@ int OutputValidateDB::init()
 
     return OK;
 }
+
+  void OutpuValidateDB::makePartialOut(
+      std::string &digest, std::string &name, std::stringstream &str)
+  {
+    evaluateData(digest, name, str);
+    str << "\t\t" << fileName.get() << ", ";
+    for (auto &time : timestamps)
+        str << time.day << "." << time.month << "." << time.year << " "
+            << time.hour << ":" << time.minute << ":" << time.second << ", ";
+    str << fileDigest.get() << ", " << fileType.get();
+    for (auto &info : versionInfo)
+        str << ", " << info.get();
+    str << "\n";
+  }
+
 
 /* Get data from database and output them in output file */
 int OutputValidateDB::outputData(std::string &digest, std::string &name)

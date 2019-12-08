@@ -48,7 +48,7 @@ int OutputUpdateDB::getFixedVersion()
 
     fixedVerInfo.reset((VS_FIXEDFILEINFO *)ptr);
     std::stringstream str;
-    if (versionInfo[2])
+    if (!versionInfo[2])
     {
         str << HIWORD(fixedVerInfo->dwProductVersionMS) << "." << LOWORD(fixedVerInfo->dwProductVersionMS) << "."
             << HIWORD(fixedVerInfo->dwProductVersionLS) << "." << LOWORD(fixedVerInfo->dwProductVersionLS);
@@ -149,8 +149,6 @@ int OutputUpdateDB::insertData(std::string &digest, std::string &name)
 
     for (auto &info : versionInfo)
         info.reset();
-    productVerHelperStr.clear();
-    fileVerHelperStr.clear();
     fileType = "Unknown";
 
     return rc;

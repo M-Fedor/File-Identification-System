@@ -26,7 +26,7 @@ public:
   int inputNextFile(std::ifstream &fDescriptor, std::string &pathName);
 
 private:
-  bool isDirectory(std::string path);
+  bool isDirectory(std::string &path);
   int findNextFDRec(std::ifstream &fDescriptor, std::string &pathName);
   void printErr(int errNUm, const std::ostringstream &errInfo);
 

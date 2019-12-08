@@ -3,7 +3,7 @@
 /* Constructor, set root of search as single directory */
 InputScanner::InputScanner(std::string &rootDirectory, const char *pattern)
 {
-    rootDirectories.push_back(rootDirectory);
+    rootDirectories.push_back(std::move(rootDirectory));
     regex = std::regex(pattern);
 }
 
@@ -11,7 +11,7 @@ InputScanner::InputScanner(std::string &rootDirectory, const char *pattern)
 InputScanner::InputScanner(
     std::vector<std::string> &rootDirectories, const char *pattern)
 {
-    this->rootDirectories.assign(rootDirectories.begin(), rootDirectories.end());
+    this->rootDirectories = std::move(rootDirectories);
     regex = std::regex(pattern);
 }
 
@@ -57,7 +57,7 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
                 if (dirStream != NULL)
                 {
                     directoryStreams.push_back(dirStream);
-                    absolutePaths.push_back(path);
+                    absolutePaths.push_back(std::move(path));
                     return findNextFDRec(fDescriptor, pathName);
                 }
                 else
@@ -70,7 +70,7 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
             fDescriptor.open(path.data());
             if (fDescriptor.good())
             {
-                pathName.assign(path);
+                pathName = std::move(path);
                 return OK;
             }
             else
@@ -108,7 +108,7 @@ int InputScanner::init()
     if (dirStream != NULL)
     {
         directoryStreams.push_back(dirStream);
-        absolutePaths.push_back(path);
+        absolutePaths.push_back(std::move(path));
         return OK;
     }
     return UNDEFINED;
@@ -144,7 +144,7 @@ int InputScanner::inputNextFile(std::ifstream &fDescriptor, std::string &pathNam
     return rc;
 }
 
-bool InputScanner::isDirectory(std::string path)
+bool InputScanner::isDirectory(std::string &path)
 {
 #if defined(__linux__)
     stat(path.data(), &buffer);
