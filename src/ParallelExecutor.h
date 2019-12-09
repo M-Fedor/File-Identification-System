@@ -28,10 +28,10 @@ public:
                    std::shared_ptr<OutputOffline> out);
   ~ParallelExecutor();
 
+  void execute();
   int init();
   int setErrFile(const char *errFileName);
   void setVerbose();
-  void validate();
 
 private:
   // Structure contains data obtained from an input component

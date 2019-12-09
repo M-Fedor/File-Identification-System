@@ -4,6 +4,7 @@
 #define FAIL 1
 #define OK 0
 #define UNDEFINED -1
+#define END -1
 
 #include <iostream>
 #include <sstream>

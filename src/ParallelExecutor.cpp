@@ -40,6 +40,42 @@ ParallelExecutor::ParallelExecutor(
 /* Destructor */
 ParallelExecutor::~ParallelExecutor() {}
 
+/* Loads input using input component, controls interruption 
+and termination of worker threads */
+void ParallelExecutor::execute()
+{
+    std::string digest;
+    std::string pathName;
+    std::unique_lock<std::mutex> lock(queueEmptyMutex);
+
+    while (!interrupted && !done)
+    {
+        while (!qReadyPred())
+        {
+            std::ifstream fDescriptor;
+            if (inputNextFile(fDescriptor, digest, pathName) == UNDEFINED)
+            {
+                std::unique_lock<std::mutex> lockAccess(queueAccessMutex);
+                done.store(true);
+                break;
+            }
+            FileData data(fDescriptor, digest, pathName);
+            pushSync(data);
+            loadedJobs++;
+        }
+        if (verbose)
+            printStatus(false);
+        queueReady.notify_all();
+        while (!qAlmostEmptyPred() && !done && !interrupted)
+            queueAlmostEmpty.wait(lock);
+    }
+
+    for (auto &thread : threadList)
+        thread.join();
+    if (verbose)
+        printStatus(true);
+}
+
 /* Validate input parameters and initialize multithreaded environment */
 int ParallelExecutor::init()
 {
@@ -218,40 +254,4 @@ void ParallelExecutor::threadFnInScanner(
         }
     }
     execInst->queueAlmostEmpty.notify_all();
-}
-
-/* Loads input using input component, controls interruption 
-and termination of worker threads */
-void ParallelExecutor::validate()
-{
-    std::string digest;
-    std::string pathName;
-    std::unique_lock<std::mutex> lock(queueEmptyMutex);
-
-    while (!interrupted && !done)
-    {
-        while (!qReadyPred())
-        {
-            std::ifstream fDescriptor;
-            if (inputNextFile(fDescriptor, digest, pathName) == UNDEFINED)
-            {
-                std::unique_lock<std::mutex> lockAccess(queueAccessMutex);
-                done.store(true);
-                break;
-            }
-            FileData data(fDescriptor, digest, pathName);
-            pushSync(data);
-            loadedJobs++;
-        }
-        if (verbose)
-            printStatus(false);
-        queueReady.notify_all();
-        while (!qAlmostEmptyPred() && !done && !interrupted)
-            queueAlmostEmpty.wait(lock);
-    }
-
-    for (unsigned int i = 0; i < nCores; i++)
-        threadList[i].join();
-    if (verbose)
-        printStatus(true);
 }

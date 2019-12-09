@@ -34,11 +34,11 @@ int DBConnection::bindResults(char *fileName, std::vector<MYSQL_TIME> &timestamp
 
     setBind(bind[0], MYSQL_TYPE_STRING, fileName, nameSize, &paramLen[0], isNull[0], error[0], noneInd);
     for (unsigned int i = 1; i < 1 + timestamps.size(); i++)
-        setBind(bind[i], MYSQL_TYPE_TIMESTAMP, &timestamps[i], sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[i], isNull[i], error[i], noneInd);
+        setBind(bind[i], MYSQL_TYPE_TIMESTAMP, &timestamps[i - 1], sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[i], isNull[i], error[i], noneInd);
     setBind(bind[4], MYSQL_TYPE_STRING, fileDigest, digestSize, &paramLen[4], isNull[4], error[4], noneInd);
     setBind(bind[5], MYSQL_TYPE_STRING, fileType, digestSize, &paramLen[5], isNull[5], error[5], noneInd);
     for (unsigned int i = 6; i < 6 + versionInfo.size(); i++)
-        setBind(bind[i], MYSQL_TYPE_STRING, versionInfo[i].get(), versionSize, &paramLen[i], isNull[i], error[i], noneInd);
+        setBind(bind[i], MYSQL_TYPE_STRING, versionInfo[i - 6].get(), versionSize, &paramLen[i], isNull[i], error[i], noneInd);
 
     if (mysql_stmt_bind_result(stmt, bind))
         return printErr("Bind MySQL statement results");

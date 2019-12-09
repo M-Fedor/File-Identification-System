@@ -11,7 +11,7 @@ int execute(ParallelExecutor *exec)
         exec->setVerbose();
 
     std::cout << "Executing...\n\n";
-    exec->validate();
+    exec->execute();
     return OK;
 }
 
@@ -22,6 +22,7 @@ int executeInFileMode()
     std::vector<std::shared_ptr<Output>> outputList;
     std::shared_ptr<OutputOffline> out(new OutputOffline(outputFileName.data()));
 
+#if defined(_WIN32)
     if (update)
     {
         for (unsigned int i = 0; i < nCores; i++)
@@ -30,7 +31,9 @@ int executeInFileMode()
             outputList.emplace_back(new OutputUpdateDB(conn));
         }
     }
-    else
+#endif
+
+    if (!offline)
     {
         for (unsigned int i = 0; i < nCores; i++)
         {
@@ -56,6 +59,8 @@ int executeInScannerMode()
         hashAlgList.emplace_back(new SHA2());
     if (offline)
         exec = std::make_shared<ParallelExecutor>(inScanner, hashAlgList, out);
+
+#if defined(_WIN32)
     if (update)
     {
         for (unsigned int i = 0; i < nCores; i++)
@@ -65,7 +70,9 @@ int executeInScannerMode()
         }
         exec = std::make_shared<ParallelExecutor>(inScanner, hashAlgList, outputList);
     }
-    else
+#endif
+
+    if (!offline && !update)
     {
         for (unsigned int i = 0; i < nCores; i++)
         {
@@ -181,7 +188,7 @@ int main(int argc, char **args)
 #endif
 
     if (rc != OK)
-        return rc;
+        return (rc == END) ? 0 : rc;
 
     getInputOpt();
     getOutputOpt();
@@ -203,6 +210,9 @@ void printHelp()
               << "\t-o\t--offline\tOffline mode; instead of validation against database,"
               << " computed file identifiers are stored in output file for later use.\n\t\t\t\t"
               << "If NOT set, then connection to database is tried to be created in order to validate data.\n"
+              << "\t-u\t--update\tUpdate mode; provides user with means for feeding extracted"
+              << " file metadata into database."
+              << "If NOT set, then connection to database is tried to be created in order to validate data.\n"
               << "\t-V\t--verbose\tEnables verbose mode.\n"
               << "\t-v\t--version\tPrints fss version and licence information.\n\n"
               << "All the remaining necessary information is obtained from user during interactive setup.\n"
@@ -222,10 +232,11 @@ void printVersion()
 #if defined(__linux__)
 int resolveOptionsUnix(int argc, char **args)
 {
-    const char *short_options = "fhoVv";
+    const char *short_options = "fhouVv";
     struct option long_options[] = {{"file", 0, NULL, 'f'},
                                     {"help", 0, NULL, 'h'},
                                     {"offline", 0, NULL, 'o'},
+                                    {"update", 0, NULL, 'u'},
                                     {"verbose", 0, NULL, 'V'},
                                     {"version", 0, NULL, 'v'},
                                     {NULL, 0, NULL, 0}};
@@ -240,16 +251,19 @@ int resolveOptionsUnix(int argc, char **args)
             break;
         case 'h':
             printHelp();
-            return OK;
+            return END;
         case 'o':
             offline = true;
             break;
+        case 'u':
+            std::cout << "This feature is not supported on your OS.\n";
+            return END;
         case 'V':
             verbose = true;
             break;
         case 'v':
             printVersion();
-            return OK;
+            return END;
         default:
             printHelp();
             return FAIL;

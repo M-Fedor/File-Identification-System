@@ -11,7 +11,7 @@ OutputValidateDB::OutputValidateDB(DBConnection &conn, std::shared_ptr<OutputOff
     fileType.reset(new char[DIGEST_SIZE]);
 
     timestamps = std::vector<MYSQL_TIME>(TIMESTAMPS_INFO_ATTR_COUNT);
-    for (int i = 0; i< VERSION_INFO_ATTR_COUNT; i++)
+    for (int i = 0; i < VERSION_INFO_ATTR_COUNT; i++)
         versionInfo.emplace_back(new char[VERSION_SIZE]);
 }
 
@@ -66,10 +66,10 @@ int OutputValidateDB::formatData(std::string &digest, std::string &name, std::st
 
 int OutputValidateDB::getData(std::string &digest, std::string &name)
 {
-    std::unique_ptr<char[]> digestStr(new char[digest.size()]);
-    std::unique_ptr<char[]> nameStr(new char[name.size()]);
-    std::strncpy(digestStr.get(), digest.data(), digest.size());
-    std::strncpy(nameStr.get(), name.data(), name.size());
+    std::unique_ptr<char[]> digestStr(new char[digest.size() + 1]);
+    std::unique_ptr<char[]> nameStr(new char[name.size() + 1]);
+    std::strncpy(digestStr.get(), digest.data(), digest.size() + 1);
+    std::strncpy(nameStr.get(), name.data(), name.size() + 1);
 
     return connection.executeSelect(digestStr.get(), nameStr.get())
                ? FAIL
@@ -83,8 +83,8 @@ int OutputValidateDB::init()
     if (connection.init("(SELECT file_name, file_created, file_changed, file_registered, file_digest, file_type"
                         " company_name, product_name, product_version, file_version, file_description, os_combination"
                         " FROM fileinfo WHERE file_digest = ?) UNION"
-                        " (SELECT file_name, file_created, file_changed, file_registered, file_digest,"
-                        " file_version, sw_package, os_combination"
+                        " (SELECT file_name, file_created, file_changed, file_registered, file_digest, file_type"
+                        " company_name, product_name, product_version, file_version, file_description, os_combination"
                         " FROM fileinfo WHERE file_name = ? AND file_digest != ?)"))
         return FAIL;
     connection.setSize(NAME_SIZE, DIGEST_SIZE, VERSION_SIZE);
@@ -95,20 +95,21 @@ int OutputValidateDB::init()
     return OK;
 }
 
-  void OutpuValidateDB::makePartialOut(
-      std::string &digest, std::string &name, std::stringstream &str)
-  {
+void OutputValidateDB::makePartialOut(
+    std::string &digest, std::string &name, std::stringstream &str)
+{
     evaluateData(digest, name, str);
-    str << "\t\t" << fileName.get() << ", ";
+    str << "\t\t" << fileName.get() << ", " << fileDigest.get()
+        << ", " << fileType.get() << ", ";
+
     for (auto &time : timestamps)
         str << time.day << "." << time.month << "." << time.year << " "
             << time.hour << ":" << time.minute << ":" << time.second << ", ";
-    str << fileDigest.get() << ", " << fileType.get();
+
     for (auto &info : versionInfo)
         str << ", " << info.get();
     str << "\n";
-  }
-
+}
 
 /* Get data from database and output them in output file */
 int OutputValidateDB::outputData(std::string &digest, std::string &name)
