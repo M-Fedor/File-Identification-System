@@ -9,11 +9,11 @@ DBConnection::DBConnection(
       digestSize(0), nameSize(0), versionSize(0), mysql(NULL), stmt(NULL), portNum(port)
 {
     // Initialize indicators for query execution
-    error = std::vector<my_bool>(8, 0);
-    isNull = std::vector<my_bool>(8, 0);
-    paramLen = std::vector<size_t>(8, 0);
+    error = std::vector<my_bool>(MAX_ATTR_COUNT, 0);
+    isNull = std::vector<my_bool>(MAX_ATTR_COUNT, 0);
+    paramLen = std::vector<size_t>(MAX_ATTR_COUNT, 0);
 
-    memset(&bind, 0, sizeof(MYSQL_BIND) * 8);
+    memset(&bind, 0, sizeof(MYSQL_BIND) * MAX_ATTR_COUNT);
 }
 
 DBConnection::~DBConnection()
@@ -27,20 +27,18 @@ DBConnection::~DBConnection()
         mysql_close(mysql);
 }
 
-int DBConnection::bindResults(
-    MYSQL_TIME fileCreated, MYSQL_TIME fileChanged, MYSQL_TIME fileRegistered,
-    char *fileDigest, char *fileName, char *fileVersion, char *osCombination, char *swPackage)
+int DBConnection::bindResults(char *fileName, std::vector<MYSQL_TIME> &timestamps, char *fileDigest,
+                              char *fileType, std::vector<std::shared_ptr<char[]>> &versionInfo)
 {
     char noneInd = STMT_INDICATOR_NONE;
 
     setBind(bind[0], MYSQL_TYPE_STRING, fileName, nameSize, &paramLen[0], isNull[0], error[0], noneInd);
-    setBind(bind[1], MYSQL_TYPE_TIMESTAMP, &fileCreated, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[1], isNull[1], error[1], noneInd);
-    setBind(bind[2], MYSQL_TYPE_TIMESTAMP, &fileChanged, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[2], isNull[2], error[2], noneInd);
-    setBind(bind[3], MYSQL_TYPE_TIMESTAMP, &fileRegistered, sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[3], isNull[3], error[3], noneInd);
+    for (unsigned int i = 1; i < 1 + timestamps.size(); i++)
+        setBind(bind[i], MYSQL_TYPE_TIMESTAMP, &timestamps[i], sizeof(MYSQL_TYPE_TIMESTAMP), &paramLen[i], isNull[i], error[i], noneInd);
     setBind(bind[4], MYSQL_TYPE_STRING, fileDigest, digestSize, &paramLen[4], isNull[4], error[4], noneInd);
-    setBind(bind[5], MYSQL_TYPE_STRING, fileVersion, versionSize, &paramLen[5], isNull[5], error[5], noneInd);
-    setBind(bind[6], MYSQL_TYPE_STRING, swPackage, versionSize, &paramLen[6], isNull[6], error[6], noneInd);
-    setBind(bind[7], MYSQL_TYPE_STRING, osCombination, versionSize, &paramLen[7], isNull[7], error[7], noneInd);
+    setBind(bind[5], MYSQL_TYPE_STRING, fileType, digestSize, &paramLen[5], isNull[5], error[5], noneInd);
+    for (unsigned int i = 6; i < 6 + versionInfo.size(); i++)
+        setBind(bind[i], MYSQL_TYPE_STRING, versionInfo[i].get(), versionSize, &paramLen[i], isNull[i], error[i], noneInd);
 
     if (mysql_stmt_bind_result(stmt, bind))
         return printErr("Bind MySQL statement results");
@@ -51,8 +49,33 @@ int DBConnection::bindResults(
     return OK;
 }
 
+int DBConnection::executeInsert(char *fileName, time_t fileCreated, time_t fileChanged, char *fileDigest,
+                                char *fileType, std::vector<std::shared_ptr<char[]>> &versionInfo)
+{
+    char ntsInd = STMT_INDICATOR_NTS;
+    isNull[0] = false;
+
+    paramLen[0] = std::strlen(fileName);
+    for (int i = 1; i < 3; i++)
+        paramLen[i] = sizeof(MYSQL_TYPE_TIMESTAMP);
+    paramLen[3] = std::strlen(fileDigest);
+    paramLen[4] = std::strlen(fileType);
+    for (unsigned int i = 5; i < 5 + versionInfo.size(); i++)
+        paramLen[i] = std::strlen(versionInfo[i].get());
+
+    setBind(bind[0], MYSQL_TYPE_STRING, fileName, 0, &paramLen[0], isNull[0], error[0], ntsInd);
+    setBind(bind[1], MYSQL_TYPE_TIMESTAMP, &fileCreated, 0, &paramLen[1], isNull[0], error[0], ntsInd);
+    setBind(bind[2], MYSQL_TYPE_TIMESTAMP, &fileChanged, 0, &paramLen[2], isNull[0], error[0], ntsInd);
+    setBind(bind[3], MYSQL_TYPE_STRING, fileDigest, 0, &paramLen[3], isNull[0], error[0], ntsInd);
+    setBind(bind[4], MYSQL_TYPE_STRING, fileType, 0, &paramLen[4], isNull[0], error[0], ntsInd);
+    for (unsigned int i = 5; i < 5 + versionInfo.size(); i++)
+        setBind(bind[i], MYSQL_TYPE_STRING, versionInfo[i].get(), 0, &paramLen[i], isNull[0], error[0], ntsInd);
+
+    return executeStmt();
+}
+
 /* Set and execute the prepared statement in order to get data from database */
-int DBConnection::executeSelect(std::string &digest, std::string &name)
+int DBConnection::executeSelect(char *digest, char *name)
 {
     char ignoreInd = STMT_INDICATOR_IGNORE;
     char ntsInd = STMT_INDICATOR_NTS;
@@ -60,24 +83,23 @@ int DBConnection::executeSelect(std::string &digest, std::string &name)
     // Only two of indicators are necessary for bind when substituting for statement variables (?)
     isNull[0] = false;
     isNull[1] = true;
-    paramLen[0] = digest.size();
-    paramLen[1] = name.size();
-
-    std::unique_ptr<char[]> digestStr(new char[digest.size()]);
-    std::unique_ptr<char[]> nameStr(new char[name.size()]);
-    std::strncpy(digestStr.get(), digest.data(), digest.size());
-    std::strncpy(nameStr.get(), name.data(), name.size());
+    paramLen[0] = std::strlen(digest);
+    paramLen[1] = std::strlen(name);
 
     //Bind statement variables to their corresponding substitutions
-    setBind(bind[0], MYSQL_TYPE_STRING, digestStr.get(), 0, &paramLen[0], isNull[0], error[0], ntsInd);
-    setBind(bind[1], MYSQL_TYPE_STRING, nameStr.get(), 0, &paramLen[1], isNull[0], error[0], ntsInd);
-    setBind(bind[2], MYSQL_TYPE_STRING, digestStr.get(), 0, &paramLen[0], isNull[0], error[0], ntsInd);
-    for (int i = 3; i < 8; i++) // Ignore the rest of bind structures this time
+    setBind(bind[0], MYSQL_TYPE_STRING, digest, 0, &paramLen[0], isNull[0], error[0], ntsInd);
+    setBind(bind[1], MYSQL_TYPE_STRING, name, 0, &paramLen[1], isNull[0], error[0], ntsInd);
+    setBind(bind[2], MYSQL_TYPE_STRING, digest, 0, &paramLen[0], isNull[0], error[0], ntsInd);
+    for (int i = 3; i < MAX_ATTR_COUNT; i++) // Ignore the rest of bind structures this time
         setBind(bind[i], MYSQL_TYPE_STRING, NULL, 0, NULL, isNull[1], error[0], ignoreInd);
 
+    return executeStmt();
+}
+
+int DBConnection::executeStmt()
+{
     if (mysql_stmt_bind_param(stmt, bind))
         return printErr("Bind MySQL statement");
-
     if (mysql_stmt_execute(stmt))
         return printErr("Execute MySQL statement");
 
@@ -93,7 +115,7 @@ int DBConnection::fetchData()
     else if (rc == MYSQL_DATA_TRUNCATED)
     {
         mysql_stmt_data_seek(stmt, 0);
-        return 2;
+        return MYSQL_DATA_TRUNCATED;
     }
 
     return rc;

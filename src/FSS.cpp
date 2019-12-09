@@ -4,7 +4,7 @@
 int execute(ParallelExecutor *exec)
 {
     if (exec->init())
-        return 1;
+        return FAIL;
     if (errFileName.size() != 0)
         exec->setErrFile(errFileName.data());
     if (verbose)
@@ -12,7 +12,7 @@ int execute(ParallelExecutor *exec)
 
     std::cout << "Executing...\n\n";
     exec->validate();
-    return 0;
+    return OK;
 }
 
 /* Instantiate necessary classes using user-defined parameters and prepare them for the execution */
@@ -22,10 +22,21 @@ int executeInFileMode()
     std::vector<std::shared_ptr<Output>> outputList;
     std::shared_ptr<OutputOffline> out(new OutputOffline(outputFileName.data()));
 
-    for (unsigned int i = 0; i < nCores; i++)
+    if (update)
     {
-        DBConnection conn(hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL);
-        outputList.emplace_back(new OutputValidateDB(conn, out));
+        for (unsigned int i = 0; i < nCores; i++)
+        {
+            DBConnection conn(hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL);
+            outputList.emplace_back(new OutputUpdateDB(conn));
+        }
+    }
+    else
+    {
+        for (unsigned int i = 0; i < nCores; i++)
+        {
+            DBConnection conn(hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL);
+            outputList.emplace_back(new OutputValidateDB(conn, out));
+        }
     }
     std::shared_ptr<ParallelExecutor> exec = std::make_shared<ParallelExecutor>(inFile, outputList);
 
@@ -45,6 +56,15 @@ int executeInScannerMode()
         hashAlgList.emplace_back(new SHA2());
     if (offline)
         exec = std::make_shared<ParallelExecutor>(inScanner, hashAlgList, out);
+    if (update)
+    {
+        for (unsigned int i = 0; i < nCores; i++)
+        {
+            DBConnection conn(hostName.data(), userName.data(), password.data(), dbName.data(), dbPort, NULL);
+            outputList.emplace_back(new OutputUpdateDB(conn));
+        }
+        exec = std::make_shared<ParallelExecutor>(inScanner, hashAlgList, outputList);
+    }
     else
     {
         for (unsigned int i = 0; i < nCores; i++)
@@ -109,11 +129,6 @@ void getOutputOpt()
     }
     else
     {
-        (std::cout << "Name of output file [Validation_results.txt]: ").flush();
-        std::getline(std::cin, outputFileName);
-        if (outputFileName.size() == 0)
-            outputFileName = std::string("Validation_results.txt");
-
         (std::cout << "Database hostname [localhost]: ").flush();
         std::getline(std::cin, hostName);
         if (hostName.size() == 0)
@@ -137,6 +152,13 @@ void getOutputOpt()
         (std::cout << "Database password: ").flush();
         secureInput(password);
     }
+    if (!offline && !update)
+    {
+        (std::cout << "Name of output file [Validation_results.txt]: ").flush();
+        std::getline(std::cin, outputFileName);
+        if (outputFileName.size() == 0)
+            outputFileName = std::string("Validation_results.txt");
+    }
 
     (std::cout << "Name of error-output file []: ").flush();
     std::getline(std::cin, errFileName);
@@ -158,8 +180,8 @@ int main(int argc, char **args)
     int rc = resolveOptionsWin(argc, args);
 #endif
 
-    if (rc != 0)
-        return rc > 0 ? 0 : 1;
+    if (rc != OK)
+        return rc;
 
     getInputOpt();
     getOutputOpt();
@@ -218,7 +240,7 @@ int resolveOptionsUnix(int argc, char **args)
             break;
         case 'h':
             printHelp();
-            return 1;
+            return OK;
         case 'o':
             offline = true;
             break;
@@ -227,14 +249,14 @@ int resolveOptionsUnix(int argc, char **args)
             break;
         case 'v':
             printVersion();
-            return 1;
+            return OK;
         default:
             printHelp();
-            return -1;
+            return FAIL;
         }
         nextOption = getopt_long(argc, args, short_options, long_options, NULL);
     }
-    return 0;
+    return OK;
 }
 #elif defined(_WIN32)
 int resolveOptionsWin(int argc, char **args)
@@ -246,25 +268,27 @@ int resolveOptionsWin(int argc, char **args)
         else if (!strcmp("-h", args[i]) || !strcmp("--help", args[i]))
         {
             printHelp();
-            return 1;
+            return OK;
         }
         else if (!strcmp("-o", args[i]) || !strcmp("--offline", args[i]))
             offline = true;
+        else if (!strcmp("-u", args[i]) || !strcmp("--update", args[i]))
+            update = true;
         else if (!strcmp("-V", args[i]) || !strcmp("--verbose", args[i]))
             verbose = true;
         else if (!strcmp("-v", args[i]) || !strcmp("--version", args[i]))
         {
             printVersion();
-            return 1;
+            return OK;
         }
         else
         {
             printHelp();
-            return -1;
+            return FAIL;
         }
     }
 
-    return 0;
+    return OK;
 }
 #endif
 

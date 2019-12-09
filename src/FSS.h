@@ -24,6 +24,7 @@ void secureInput(std::string &input);
 
 bool inputFile = false;
 bool offline = false;
+bool update = false;
 bool verbose = false;
 std::string dbName;
 std::string errFileName;

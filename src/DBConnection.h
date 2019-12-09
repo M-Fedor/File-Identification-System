@@ -1,8 +1,11 @@
 #ifndef DBConnection_h
 #define DBConnection_h
 
+#define MAX_ATTR_COUNT 12
+
 #include "Utils.h"
 #include <cstring>
+#include <ctime>
 #include <memory>
 #include <vector>
 
@@ -25,15 +28,17 @@ public:
     DBConnection &operator=(const DBConnection &) = delete;
     DBConnection &operator=(DBConnection &&c) = default;
 
-    int bindResults(
-        MYSQL_TIME fileCreated, MYSQL_TIME fileChanged, MYSQL_TIME fileRegistered,
-        char *fileDigest, char *fileName, char *fileVersion, char *osCombination, char *swPackage);
-    int executeSelect(std::string &digest, std::string &name);
+    int bindResults(char *fileName, std::vector<MYSQL_TIME> &timestamps, char *fileDigest,
+                    char *fileType, std::vector<std::shared_ptr<char[]>> &versionInfo);
+    int executeInsert(char *fileName, time_t fileCreated, time_t fileChanged, char *fileDigest,
+                      char *fileType, std::vector<std::shared_ptr<char[]>> &versionInfo);
+    int executeSelect(char *digest, char *name);
     int fetchData();
     int init(const char *query);
     void setSize(int nameSize, int digestSize, int versionSize);
 
 private:
+    int executeStmt();
     int printErr(const char *errInfo);
     void setBind(
         MYSQL_BIND &bind, enum enum_field_types field_type, void *param, size_t paramSize,
@@ -48,7 +53,7 @@ private:
     int nameSize;
     int versionSize;
     MYSQL *mysql;
-    MYSQL_BIND bind[8];
+    MYSQL_BIND bind[MAX_ATTR_COUNT];
     MYSQL_STMT *stmt;
     std::vector<my_bool> error;
     std::vector<my_bool> isNull;
