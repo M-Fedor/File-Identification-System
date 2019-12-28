@@ -32,5 +32,5 @@ clean:
 
 install:
 	mkdir -p $(INSTDIR)/.
-	-rm $(INSTDIR)/$(TARGET)
-	-mv $(TARGET) $(INSTDIR)/$(TARGET)
+	-mv $(TARGET) $(INSTDIR)/.
+	-cp conf/$(TARGET).manifest $(INSTDIR)/.

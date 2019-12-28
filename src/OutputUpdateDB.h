@@ -1,7 +1,7 @@
-#if defined(_WIN32)
 #ifndef OutputUpdateDB_h
 #define OutputUpdateDB_h
 
+#if defined(_WIN32)
 #define VERSION_INFO_ATTR_COUNT 6
 #define TRNSLTION_COUNT 4
 
@@ -10,6 +10,7 @@
 #include "OutputOffline.h"
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <versionhelpers.h>
 #include <winver.h>
 
 class OutputUpdateDB : public Output
@@ -30,6 +31,8 @@ private:
 
     int getFileInfo(std::string &name);
     int getFixedVersion();
+    int getOSVersion();
+    int getType();
     int getVariableVersion();
     int insertData(std::string &digest, std::string &name);
     int printErr(int errNum, const char *errInfo);
@@ -40,12 +43,14 @@ private:
     std::string fileType;
     std::string fileVerHelperStr;
     std::string productVerHelperStr;
-    std::unique_ptr<char> verInfo;
-    std::unique_ptr<VS_FIXEDFILEINFO> fixedVerInfo;
+    std::unique_ptr<char[]> defaultStr;
+    std::unique_ptr<char[]> osVerStr;
+    std::unique_ptr<char[]> verInfo;
     std::vector<LPCSTR> versionAttributes;
-    std::vector<std::shared_ptr<char[]>> versionInfo;
+    std::vector<char *> versionInfo;
     struct Translation translationList[TRNSLTION_COUNT];
     struct _stat64 buffer;
+    VS_FIXEDFILEINFO *fixedVerInfo;
 };
 
 #endif

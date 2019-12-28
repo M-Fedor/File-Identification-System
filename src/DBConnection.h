@@ -31,7 +31,7 @@ public:
     int bindResults(char *fileName, std::vector<MYSQL_TIME> &timestamps, char *fileDigest,
                     char *fileType, std::vector<std::shared_ptr<char[]>> &versionInfo);
     int executeInsert(char *fileName, time_t fileCreated, time_t fileChanged, char *fileDigest,
-                      char *fileType, std::vector<std::shared_ptr<char[]>> &versionInfo);
+                      char *fileType, std::vector<char *> &versionInfo);
     int executeSelect(char *digest, char *name);
     int fetchData();
     int init(const char *query);

@@ -50,26 +50,26 @@ int DBConnection::bindResults(char *fileName, std::vector<MYSQL_TIME> &timestamp
 }
 
 int DBConnection::executeInsert(char *fileName, time_t fileCreated, time_t fileChanged, char *fileDigest,
-                                char *fileType, std::vector<std::shared_ptr<char[]>> &versionInfo)
+                                char *fileType, std::vector<char *> &versionInfo)
 {
     char ntsInd = STMT_INDICATOR_NTS;
     isNull[0] = false;
 
     paramLen[0] = std::strlen(fileName);
     for (int i = 1; i < 3; i++)
-        paramLen[i] = sizeof(MYSQL_TYPE_TIMESTAMP);
+        paramLen[i] = sizeof(MYSQL_TYPE_LONGLONG);
     paramLen[3] = std::strlen(fileDigest);
     paramLen[4] = std::strlen(fileType);
     for (unsigned int i = 5; i < 5 + versionInfo.size(); i++)
-        paramLen[i] = std::strlen(versionInfo[i].get());
+        paramLen[i] = std::strlen(versionInfo[i - 5]);
 
     setBind(bind[0], MYSQL_TYPE_STRING, fileName, 0, &paramLen[0], isNull[0], error[0], ntsInd);
-    setBind(bind[1], MYSQL_TYPE_TIMESTAMP, &fileCreated, 0, &paramLen[1], isNull[0], error[0], ntsInd);
-    setBind(bind[2], MYSQL_TYPE_TIMESTAMP, &fileChanged, 0, &paramLen[2], isNull[0], error[0], ntsInd);
+    setBind(bind[1], MYSQL_TYPE_LONGLONG, &fileCreated, 0, &paramLen[1], isNull[0], error[0], ntsInd);
+    setBind(bind[2], MYSQL_TYPE_LONGLONG, &fileChanged, 0, &paramLen[2], isNull[0], error[0], ntsInd);
     setBind(bind[3], MYSQL_TYPE_STRING, fileDigest, 0, &paramLen[3], isNull[0], error[0], ntsInd);
     setBind(bind[4], MYSQL_TYPE_STRING, fileType, 0, &paramLen[4], isNull[0], error[0], ntsInd);
     for (unsigned int i = 5; i < 5 + versionInfo.size(); i++)
-        setBind(bind[i], MYSQL_TYPE_STRING, versionInfo[i].get(), 0, &paramLen[i], isNull[0], error[0], ntsInd);
+        setBind(bind[i], MYSQL_TYPE_STRING, versionInfo[i - 5], 0, &paramLen[i], isNull[0], error[0], ntsInd);
 
     return executeStmt();
 }
@@ -77,7 +77,6 @@ int DBConnection::executeInsert(char *fileName, time_t fileCreated, time_t fileC
 /* Set and execute the prepared statement in order to get data from database */
 int DBConnection::executeSelect(char *digest, char *name)
 {
-    char ignoreInd = STMT_INDICATOR_IGNORE;
     char ntsInd = STMT_INDICATOR_NTS;
 
     // Only two of indicators are necessary for bind when substituting for statement variables (?)
@@ -90,8 +89,6 @@ int DBConnection::executeSelect(char *digest, char *name)
     setBind(bind[0], MYSQL_TYPE_STRING, digest, 0, &paramLen[0], isNull[0], error[0], ntsInd);
     setBind(bind[1], MYSQL_TYPE_STRING, name, 0, &paramLen[1], isNull[0], error[0], ntsInd);
     setBind(bind[2], MYSQL_TYPE_STRING, digest, 0, &paramLen[0], isNull[0], error[0], ntsInd);
-    for (int i = 3; i < MAX_ATTR_COUNT; i++) // Ignore the rest of bind structures this time
-        setBind(bind[i], MYSQL_TYPE_STRING, NULL, 0, NULL, isNull[1], error[0], ignoreInd);
 
     return executeStmt();
 }

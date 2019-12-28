@@ -188,7 +188,7 @@ int main(int argc, char **args)
 #endif
 
     if (rc != OK)
-        return (rc == END) ? 0 : rc;
+        return (rc == END) ? OK : rc;
 
     getInputOpt();
     getOutputOpt();

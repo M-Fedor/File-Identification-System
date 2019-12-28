@@ -1,13 +1,18 @@
-#if defined(_WIN32)
 #include "OutputUpdateDB.h"
+
+#if defined(_WIN32)
 
 OutputUpdateDB::OutputUpdateDB(DBConnection &conn)
     : verStr(NULL)
 {
     connection = std::move(conn);
+
+    defaultStr.reset(new char[strlen("Unknown") + 1]);
+    std::strncpy(defaultStr.get(), "Unknown", strlen("Unknown") + 1);
+
     versionAttributes = std::vector<LPCSTR>{"CompanyName", "ProductName", "ProductVersion",
                                             "FileVersion", "FileDescription"};
-    versionInfo = std::vector<std::shared_ptr<char[]>>(VERSION_INFO_ATTR_COUNT);
+    versionInfo = std::vector<char *>(VERSION_INFO_ATTR_COUNT, NULL);
 
     translationList[0].language = translationList[1].language = std::string("0409");
     translationList[2].language = translationList[3].language = std::string("0000");
@@ -31,30 +36,21 @@ int OutputUpdateDB::getFileInfo(std::string &name)
     if (!GetFileVersionInfoA(name.data(), dwHandle, verSize, (LPVOID)verInfo.get()))
         return FAIL;
 
-    getVariableVersion();
-    getFixedVersion();
+    getType();
+    if (getVariableVersion())
+        getFixedVersion();
 
     return OK;
 }
 
 int OutputUpdateDB::getFixedVersion()
 {
-    if (versionInfo[2] && versionInfo[3])
-        return OK;
-
-    LPVOID ptr;
-    if (!VerQueryValue((LPVOID)verInfo.get(), TEXT("\\"), &ptr, (PUINT)&verSize))
-        return FAIL;
-
-    fixedVerInfo.reset((VS_FIXEDFILEINFO *)ptr);
     std::stringstream str;
     if (!versionInfo[2])
     {
         str << HIWORD(fixedVerInfo->dwProductVersionMS) << "." << LOWORD(fixedVerInfo->dwProductVersionMS) << "."
             << HIWORD(fixedVerInfo->dwProductVersionLS) << "." << LOWORD(fixedVerInfo->dwProductVersionLS);
         productVerHelperStr = std::move(str.str());
-        versionInfo[2].reset(new char[productVerHelperStr.size()]);
-        std::strncpy(versionInfo[2].get(), productVerHelperStr.data(), productVerHelperStr.size());
     }
 
     str.str("");
@@ -63,8 +59,61 @@ int OutputUpdateDB::getFixedVersion()
         str << HIWORD(fixedVerInfo->dwFileVersionMS) << "." << LOWORD(fixedVerInfo->dwFileVersionMS) << "."
             << HIWORD(fixedVerInfo->dwFileVersionLS) << "." << LOWORD(fixedVerInfo->dwFileVersionLS);
         fileVerHelperStr = std::move(str.str());
-        versionInfo[3].reset(new char[fileVerHelperStr.size()]);
-        std::strncpy(versionInfo[2].get(), fileVerHelperStr.data(), fileVerHelperStr.size());
+    }
+
+    return OK;
+}
+
+int OutputUpdateDB::getOSVersion()
+{
+    const char *osVersion;
+    if (IsWindows10OrGreater())
+    {
+        if (IsWindowsServer())
+            osVersion = "Windows Server 2016 or later";
+        else
+            osVersion = "Windows 10";
+    }
+
+    else if (IsWindows8Point1OrGreater())
+    {
+        if (IsWindowsServer())
+            osVersion = "Windows Server 2012 R2";
+        else
+            osVersion = "Windows 8.1";
+    }
+
+    else if (IsWindows8OrGreater())
+    {
+        if (IsWindowsServer())
+            osVersion = "Windows Server 2012";
+        else
+            osVersion = "Windows 8";
+    }
+
+    else if (IsWindows7OrGreater())
+    {
+        if (IsWindowsServer())
+            osVersion = "Windows Server 2008 R2";
+        else
+            osVersion = "Windows 7";
+    }
+    else
+        return printFailed("Get OS version");
+
+    osVerStr.reset(new char[strlen(osVersion) + 1]);
+    std::strncpy(osVerStr.get(), osVersion, strlen(osVersion) + 1);
+    versionInfo[5] = osVerStr.get();
+
+    return OK;
+}
+
+int OutputUpdateDB::getType()
+{
+    if (!VerQueryValue((LPVOID)verInfo.get(), TEXT("\\"), (LPVOID *)&fixedVerInfo, (PUINT)&verSize))
+    {
+        fileType = "Unknown";
+        return FAIL;
     }
 
     switch (fixedVerInfo->dwFileType)
@@ -99,11 +148,11 @@ int OutputUpdateDB::getVariableVersion()
     {
         str << "\\StringFileInfo\\" << trnsltion.language << trnsltion.codePage << "\\";
 
-        for (int j = 0; j < VERSION_INFO_ATTR_COUNT; j++)
+        for (int j = 0; j < VERSION_INFO_ATTR_COUNT - 1; j++)
         {
             if (VerQueryValue((LPVOID)verInfo.get(), str.str().append(versionAttributes[j]).data(),
                               (LPVOID *)&verStr, (PUINT)&verSize))
-                versionInfo[j].reset(verStr);
+                versionInfo[j] = verStr;
             foundResult = versionInfo[j] ? true : false;
         }
         if (foundResult)
@@ -119,37 +168,52 @@ int OutputUpdateDB::init()
                         " (file_name, file_created, file_changed, file_registered,"
                         " file_digest, file_type, company_name, product_name,"
                         " product_version, file_version, file_description, os_combination)"
-                        " VALUES ('?', UNIX_TIMESTAMP(?), UNIX_TIMESTAMP(?), NOW(),"
-                        " '?', '?', '?','?', '?', '?', '?', '?')"))
+                        " VALUES (?,  FROM_UNIXTIME(?) , FROM_UNIXTIME(?) , NOW(),"
+                        " ?, ?, ?, ?, ?, ?, ?, ?)"))
         return FAIL;
+    if (getOSVersion())
+        return FAIL;
+
     return OK;
 }
 
 int OutputUpdateDB::insertData(std::string &digest, std::string &name)
 {
-    std::unique_ptr<char[]> digestStr(new char[digest.size()]);
-    std::unique_ptr<char[]> nameStr(new char[name.size()]);
-    std::unique_ptr<char[]> typeStr(new char[fileType.size()]);
+    std::unique_ptr<char[]> digestStr(new char[digest.size() + 1]);
+    std::unique_ptr<char[]> nameStr(new char[name.size() + 1]);
+    std::unique_ptr<char[]> typeStr(new char[fileType.size() + 1]);
 
-    std::strncpy(digestStr.get(), digest.data(), digest.size());
-    std::strncpy(nameStr.get(), name.data(), name.size());
-    std::strncpy(typeStr.get(), fileType.data(), fileType.size());
+    std::strncpy(digestStr.get(), digest.data(), digest.size() + 1);
+    std::strncpy(nameStr.get(), name.data(), name.size() + 1);
+    std::strncpy(typeStr.get(), fileType.data(), fileType.size() + 1);
+
+    std::unique_ptr<char[]> productVerStr, fileVerStr;
+    if (!productVerHelperStr.empty())
+    {
+        productVerStr.reset(new char[productVerHelperStr.size() + 1]);
+        std::strncpy(productVerStr.get(), productVerHelperStr.data(), productVerHelperStr.size() + 1);
+        versionInfo[2] = productVerStr.get();
+    }
+    if (!fileVerHelperStr.empty())
+    {
+        fileVerStr.reset(new char[fileVerHelperStr.size() + 1]);
+        std::strncpy(fileVerStr.get(), fileVerHelperStr.data(), fileVerHelperStr.size() + 1);
+        versionInfo[3] = fileVerStr.get();
+    }
 
     for (auto &info : versionInfo)
     {
         if (!info)
-        {
-            info.reset(new char[sizeof(char)]);
-            info.get()[0] = '\0';
-        }
+            info = defaultStr.get();
     }
 
     int rc = connection.executeInsert(
         nameStr.get(), buffer.st_ctime, buffer.st_mtime, digestStr.get(), typeStr.get(), versionInfo);
 
-    for (auto &info : versionInfo)
-        info.reset();
-    fileType = "Unknown";
+    productVerHelperStr.clear();
+    fileVerHelperStr.clear();
+    for (int i = 0; i < VERSION_INFO_ATTR_COUNT - 1; i++)
+        versionInfo[i] = NULL;
 
     return rc;
 }
@@ -164,7 +228,7 @@ int OutputUpdateDB::printErr(int errNum, const char *errInfo)
 {
     printFailed(errInfo);
     std::cerr << " - " << strerror(errNum) << "\n";
-    return 1;
+    return FAIL;
 }
 
 #endif
