@@ -40,23 +40,59 @@ ParallelExecutor::ParallelExecutor(
 /* Destructor */
 ParallelExecutor::~ParallelExecutor() {}
 
+/* Loads input using input component, controls interruption 
+and termination of worker threads */
+void ParallelExecutor::execute()
+{
+    std::string digest;
+    std::string pathName;
+    std::unique_lock<std::mutex> lock(queueEmptyMutex);
+
+    while (!interrupted && !done)
+    {
+        while (!qReadyPred())
+        {
+            std::ifstream fDescriptor;
+            if (inputNextFile(fDescriptor, digest, pathName) == UNDEFINED)
+            {
+                std::unique_lock<std::mutex> lockAccess(queueAccessMutex);
+                done.store(true);
+                break;
+            }
+            FileData data(fDescriptor, digest, pathName);
+            pushSync(data);
+            loadedJobs++;
+        }
+        if (verbose)
+            printStatus(false);
+        queueReady.notify_all();
+        while (!qAlmostEmptyPred() && !done && !interrupted)
+            queueAlmostEmpty.wait(lock);
+    }
+
+    for (auto &thread : threadList)
+        thread.join();
+    if (verbose)
+        printStatus(true);
+}
+
 /* Validate input parameters and initialize multithreaded environment */
 int ParallelExecutor::init()
 {
     if (!nCores)
-        return 1;
+        return FAIL;
     if (inFile)
     {
         if (inFile->init())
-            return 1;
+            return FAIL;
     }
     else if (inScanner)
     {
         if (inScanner->init())
-            return 1;
+            return FAIL;
     }
     else
-        return 1;
+        return FAIL;
 
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
@@ -65,13 +101,13 @@ int ParallelExecutor::init()
     for (unsigned int i = 0; i < nCores; i++)
     {
         if (!outputInstList[i])
-            return 1;
+            return FAIL;
         if (outputInstList[i]->init())
-            return 1;
+            return FAIL;
         if (inScanner)
         {
             if (!hashAlgInstList[i])
-                return 1;
+                return FAIL;
             threadList.emplace_back(threadFnInScanner, hashAlgInstList[i].get(),
                                     outputInstList[i].get(), this);
             queueAlmostEmpty.wait(lock);
@@ -83,7 +119,7 @@ int ParallelExecutor::init()
         }
     }
 
-    return 0;
+    return OK;
 }
 
 /* Input information about next file based on input component currently being used */
@@ -105,11 +141,11 @@ int ParallelExecutor::popSync(FileData &data)
             queueReady.wait(lock);
     }
     if (dataQueue.empty() && done)
-        return 1;
+        return FAIL;
 
     data = std::move(dataQueue.front());
     dataQueue.pop();
-    return 0;
+    return OK;
 }
 
 void ParallelExecutor::printStatus(bool end)
@@ -142,8 +178,8 @@ int ParallelExecutor::setErrFile(const char *errFileName)
 {
     fError = OutputOffline(errFileName);
     if (fError.init())
-        return 1;
-    return 0;
+        return FAIL;
+    return OK;
 }
 
 void ParallelExecutor::setVerbose() { verbose = true; }
@@ -174,7 +210,7 @@ void ParallelExecutor::threadFnInFile(Output *out, ParallelExecutor *execInst)
         if (execInst->popSync(data))
             break;
         rc = out->outputData(data.digest, data.pathName);
-        if (rc == 1)
+        if (rc == FAIL)
         {
             execInst->fError.outputData(data.digest, data.pathName);
             execInst->failedJobs++;
@@ -210,7 +246,7 @@ void ParallelExecutor::threadFnInScanner(
         {
             data.digest = hashAlg->hashData();
             rc = out->outputData(data.digest, data.pathName);
-            if (rc == 1)
+            if (rc == FAIL)
             {
                 execInst->fError.outputData(data.digest, data.pathName);
                 execInst->failedJobs++;
@@ -218,40 +254,4 @@ void ParallelExecutor::threadFnInScanner(
         }
     }
     execInst->queueAlmostEmpty.notify_all();
-}
-
-/* Loads input using input component, controls interruption 
-and termination of worker threads */
-void ParallelExecutor::validate()
-{
-    std::string digest;
-    std::string pathName;
-    std::unique_lock<std::mutex> lock(queueEmptyMutex);
-
-    while (!interrupted && !done)
-    {
-        while (!qReadyPred())
-        {
-            std::ifstream fDescriptor;
-            if (inputNextFile(fDescriptor, digest, pathName) == -1)
-            {
-                std::unique_lock<std::mutex> lockAccess(queueAccessMutex);
-                done.store(true);
-                break;
-            }
-            FileData data(fDescriptor, digest, pathName);
-            pushSync(data);
-            loadedJobs++;
-        }
-        if (verbose)
-            printStatus(false);
-        queueReady.notify_all();
-        while (!qAlmostEmptyPred() && !done && !interrupted)
-            queueAlmostEmpty.wait(lock);
-    }
-
-    for (unsigned int i = 0; i < nCores; i++)
-        threadList[i].join();
-    if (verbose)
-        printStatus(true);
 }

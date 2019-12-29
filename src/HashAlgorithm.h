@@ -1,6 +1,7 @@
 #ifndef HashAlgorithm_h
 #define HashAlgorithm_h
 
+#include <memory>
 #include <string>
 
 /* Interface for file identification component */

@@ -3,7 +3,7 @@
 Output::Output() {}
 Output::~Output() {}
 
-int Output::init() { return 0; }
-int Output::outputData(std::string & /* data */) { return 0; }
+int Output::init() { return OK; }
+int Output::outputData(std::string & /* data */) { return OK; }
 int Output::outputData(
-    std::string & /* digest*/, std::string & /* name */) { return 0; }
+    std::string & /* digest*/, std::string & /* name */) { return OK; }

@@ -1,6 +1,11 @@
 #ifndef Utils_h
 #define Utils_h
 
+#define FAIL 1
+#define OK 0
+#define UNDEFINED -1
+#define END -1
+
 #include <iostream>
 #include <sstream>
 
@@ -13,8 +18,11 @@
 #include <windows.h>
 #endif
 
-void printFailed(const char *errInfo);
-void printFailed(const std::ostringstream &errInfo);
+/* Definitions of simple general utilities not specific
+ to any component */
+
+int printFailed(const char *errInfo);
+int printFailed(const std::ostringstream &errInfo);
 void printGreen(const char *str);
 void printOrange(const char *str);
 void printRed(const char *str);

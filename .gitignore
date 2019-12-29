@@ -19,3 +19,4 @@
 *.bin
 *.ipch
 *.exe
+build/*

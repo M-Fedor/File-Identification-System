@@ -27,7 +27,7 @@ public:
 private:
   CryptoPP::HexEncoder encoder;
   CryptoPP::SHA256 digestor;
-  unsigned char *digest;
+  std::unique_ptr<unsigned char[]> digest;
 };
 
 #endif

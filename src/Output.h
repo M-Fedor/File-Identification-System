@@ -17,7 +17,7 @@ public:
   /* Write data in output file */
   virtual int outputData(std::string &data);
 
-  /* Get output and write it in output file */
+  /* Get output and write it in output file or insert it to database */
   virtual int outputData(std::string &digest, std::string &name);
 };
 

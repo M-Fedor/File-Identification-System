@@ -15,8 +15,8 @@ public:
   /* Initialize input component and report any failures */
   virtual int init();
 
-  /* Increment file-system iterator, return opened file descriptor
-  and fill absolute path of the file in pathName */
+  /* Increment file-system iterator, fill opened file descriptor
+  and absolute path of the file in respective parameters */
   virtual int inputNextFile(std::ifstream &fDescriptor, std::string &pathName);
 
 protected:

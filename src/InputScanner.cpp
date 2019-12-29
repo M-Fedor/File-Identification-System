@@ -3,7 +3,7 @@
 /* Constructor, set root of search as single directory */
 InputScanner::InputScanner(std::string &rootDirectory, const char *pattern)
 {
-    rootDirectories.push_back(rootDirectory);
+    rootDirectories.push_back(std::move(rootDirectory));
     regex = std::regex(pattern);
 }
 
@@ -11,7 +11,7 @@ InputScanner::InputScanner(std::string &rootDirectory, const char *pattern)
 InputScanner::InputScanner(
     std::vector<std::string> &rootDirectories, const char *pattern)
 {
-    this->rootDirectories.assign(rootDirectories.begin(), rootDirectories.end());
+    this->rootDirectories = std::move(rootDirectories);
     regex = std::regex(pattern);
 }
 
@@ -29,7 +29,7 @@ InputScanner::~InputScanner()
 }
 
 /* Iterate through file-system, return next file's opened file descriptor for reading,
-fill absolute path of the file in pathName, return -1 when no more files can be found
+fill absolute path of the file in pathName, return UNDEFINED when no more files can be found
 in current root of search */
 int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathName)
 {
@@ -45,7 +45,7 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
                                     std::ostringstream() << "Close directory " << absolutePaths.back().data()));
             directoryStreams.pop_back();
             absolutePaths.pop_back();
-            return !directoryStreams.empty() ? findNextFDRec(fDescriptor, pathName) : -1;
+            return !directoryStreams.empty() ? findNextFDRec(fDescriptor, pathName) : UNDEFINED;
         }
 
         std::string path = absolutePaths.back();
@@ -53,11 +53,11 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
         {
             if (strcmp(dirContent->d_name, ".") && strcmp(dirContent->d_name, ".."))
             {
-                DIR *dirStream = opendir(path.append("/").data());
+                DIR *dirStream = opendir(path.append(DEFAULT_SEPARATOR).data());
                 if (dirStream != NULL)
                 {
                     directoryStreams.push_back(dirStream);
-                    absolutePaths.push_back(path);
+                    absolutePaths.push_back(std::move(path));
                     return findNextFDRec(fDescriptor, pathName);
                 }
                 else
@@ -70,8 +70,8 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
             fDescriptor.open(path.data());
             if (fDescriptor.good())
             {
-                pathName.assign(path);
-                return 0;
+                pathName = std::move(path);
+                return OK;
             }
             else
                 printFailed(static_cast<std::ostringstream &>(
@@ -81,22 +81,22 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
     else
         printErr(errno, static_cast<std::ostringstream &>(
                             std::ostringstream() << "Read from directory " << absolutePaths.back().data()));
-    return -2; // Return -2 on system error
+    return FAIL; // Return FAIL on system error
 }
 
 /* Try to open next directory from list of search roots,
-initialize search of this directory properly */
+initialize search of the directory properly */
 int InputScanner::init()
 {
     if (rootDirectories.size() == 0)
-        return -1;
+        return UNDEFINED;
 
     DIR *dirStream = NULL;
     std::string path;
 
     do // Do until some directory is opened successfully
     {
-        path = rootDirectories.back().append("/");
+        path = rootDirectories.back().append(DEFAULT_SEPARATOR);
         dirStream = opendir(path.data());
         if (dirStream == NULL)
             printErr(errno, static_cast<std::ostringstream &>(
@@ -108,11 +108,10 @@ int InputScanner::init()
     if (dirStream != NULL)
     {
         directoryStreams.push_back(dirStream);
-        absolutePaths.push_back(path);
-        return 0;
+        absolutePaths.push_back(std::move(path));
+        return OK;
     }
-    else
-        return -1;
+    return UNDEFINED;
 }
 
 /* Iterate through file system until some file is opened successfuly
@@ -120,18 +119,18 @@ or END-OF-DIRECTORY is reached */
 int InputScanner::inputNextFile(std::ifstream &fDescriptor, std::string &pathName)
 {
     bool match = false;
-    int rc = -3;
+    int rc;
     do
     {
         rc = findNextFDRec(fDescriptor, pathName);
         match = std::regex_match(pathName, regex);
         if (!match && fDescriptor.is_open())
             fDescriptor.close();
-    } while (rc == -2 || (!rc && !match));
+    } while (rc == FAIL || (!rc && !match));
 
-    while (rc == -1)
+    while (rc == UNDEFINED)
     {
-        if (init() == -1)
+        if (init() == UNDEFINED)
             break;
         do
         {
@@ -139,27 +138,25 @@ int InputScanner::inputNextFile(std::ifstream &fDescriptor, std::string &pathNam
             match = std::regex_match(pathName, regex);
             if (!match && fDescriptor.is_open())
                 fDescriptor.close();
-        } while (rc == -2 || (!rc && !match));
+        } while (rc == FAIL || (!rc && !match));
     }
 
     return rc;
 }
 
-bool InputScanner::isDirectory(std::string path)
+/* Performs test whether the object defined by path is directory
+based on platform currently in use */
+bool InputScanner::isDirectory(std::string &path)
 {
 #if defined(__linux__)
     stat(path.data(), &buffer);
-    if (S_ISDIR(buffer.st_mode))
-        return true;
-    return false;
+    return S_ISDIR(buffer.st_mode) ? true : false;
 #elif defined(_WIN32)
-    if (GetFileAttributesA(path.data()) == FILE_ATTRIBUTE_DIRECTORY)
-        return true;
-    return false;
+    return (GetFileAttributesA(path.data()) == FILE_ATTRIBUTE_DIRECTORY) ? true : false;
 #endif
 }
 
-/* Print error details */
+/* Print error message in common format along with specific error description */
 void InputScanner::printErr(int errNum, const std::ostringstream &errInfo)
 {
     printFailed(errInfo);

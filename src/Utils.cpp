@@ -1,17 +1,23 @@
 #include "Utils.h"
 
-void printFailed(const char *errInfo)
+/* Print error message using common format */
+int printFailed(const char *errInfo)
 {
     std::cerr << errInfo << " - ";
     printRed("FAILED\n");
+    return FAIL;
 }
 
-void printFailed(const std::ostringstream &errInfo)
+/* Print error message using common format */
+int printFailed(const std::ostringstream &errInfo)
 {
     std::cerr << errInfo.str() << " - ";
     printRed("FAILED\n");
+    return FAIL;
 }
 
+/* Helper function used to configure Windws terminal 
+with proper color parameter */
 #if defined(_WIN32)
 void printColorized(const char *str, int color)
 {
@@ -22,6 +28,7 @@ void printColorized(const char *str, int color)
 }
 #endif
 
+/* Print str in green color based on platform currently in use */
 void printGreen(const char *str)
 {
 #if defined(__linux__)
@@ -31,6 +38,7 @@ void printGreen(const char *str)
 #endif
 }
 
+/* Print str in orange color based on platform currently in use */
 void printOrange(const char *str)
 {
 #if defined(__linux__)
@@ -40,6 +48,7 @@ void printOrange(const char *str)
 #endif
 }
 
+/* Print str in red color based on platform currently in use */
 void printRed(const char *str)
 {
 #if defined(__linux__)
@@ -49,18 +58,22 @@ void printRed(const char *str)
 #endif
 }
 
+/* Print warning message using common format */
 void printWarning(const char *warnInfo)
 {
     std::cerr << warnInfo << " - ";
     printOrange("WARNING\n");
 }
 
+/* Print warning message using common format */
 void printWarning(const std::ostringstream &warnInfo)
 {
     std::cerr << warnInfo.str() << " - ";
     printOrange("WARNING\n");
 }
 
+/* Set cursor to point on the beginning of line above 
+current line based on platform currently in use */
 void resetCursor()
 {
 #if defined(__linux__)
