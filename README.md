@@ -38,7 +38,7 @@ Debian:
 Place this project directory in `$HOME/git/` or define respective custom directory in `Makefile`.
 
 ```
-INSTDIR=$(HOME)/git/File-System-Scanner/build
+INSTDIR=$(HOME)/git/File-Identification-System/build
 ```
 Then change to project directory on your local system.
 
