@@ -1,4 +1,4 @@
-# File System Scanner
+# File Identification System
 
 # General concepts
 
@@ -56,11 +56,11 @@ make install
 | `install` | Install to `$INSTDIR` after compilation.      |
 | `clean`   | Remove compiled files for new clean building. |
 
-## Example of running File System Scanner
+## Example of running File Identification System
 
 ```
 cd <project-dir>
-./build/fss <options>
+./build/fis <options>
 ```
 
 Application will obtain all the necessary configuration during user-interactive setup.
