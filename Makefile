@@ -1,5 +1,5 @@
 ifeq ($(OS), Windows_NT)
-	INSTDIR=$(USERPROFILE)/git/File-System-Scanner/build
+	INSTDIR=$(USERPROFILE)/git/File-Identification-System/build
 	CRYPTOPP_INCLUDE_DIR=C:/Program\ Files/Cryptopp
 	CRYPTOPP_LIB_DIR=$(CRYPTOPP_INCLUDE_DIR)
 	MYSQL_INCLUDE_DIR=C:/Program\ Files/MariaDB/MariaDB\ Connector\ C\ 64-bit/include
@@ -7,7 +7,7 @@ ifeq ($(OS), Windows_NT)
 	TARGET=fis.exe
 endif
 ifeq ($(shell uname), Linux)
-	INSTDIR=$(HOME)/git/File-System-Scanner/build
+	INSTDIR=$(HOME)/git/File-Identification-System/build
 	TARGET=fis
 endif
 
