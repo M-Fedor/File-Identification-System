@@ -2,11 +2,11 @@
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
     <assemblyIdentity
         type="win32"
-        name="fss.exe"
+        name="fis.exe"
         version="0.1.0.0"
         processorArchitecture="x86"
     />
-    <description>File System Scanner</description>
+    <description>File Identification System</description>
     <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
         <application>
             <!-- Windows 10 -->

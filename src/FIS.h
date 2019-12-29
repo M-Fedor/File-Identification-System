@@ -1,5 +1,5 @@
-#ifndef FSS_h
-#define FSS_h
+#ifndef FIS_h
+#define FIS_h
 
 #include "ParallelExecutor.h"
 #include <unistd.h>

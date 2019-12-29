@@ -4,22 +4,22 @@ ifeq ($(OS), Windows_NT)
 	CRYPTOPP_LIB_DIR=$(CRYPTOPP_INCLUDE_DIR)
 	MYSQL_INCLUDE_DIR=C:/Program\ Files/MariaDB/MariaDB\ Connector\ C\ 64-bit/include
 	MYSQL_LIB_DIR=C:/Program\ Files/MariaDB/MariaDB\ Connector\ C\ 64-bit/lib
-	TARGET=fss.exe
+	TARGET=fis.exe
 endif
 ifeq ($(shell uname), Linux)
 	INSTDIR=$(HOME)/git/File-System-Scanner/build
-	TARGET=fss
+	TARGET=fis
 endif
 
 default: $(TARGET)
 
-fss: src/FSS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp\
+fis: src/FIS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp\
 	src/HashAlgorithm.cpp src/SHA2.cpp\
 	src/DBConnection.cpp src/Output.cpp src/OutputOffline.cpp src/OutputValidateDB.cpp\
 	src/ParallelExecutor.cpp src/Utils.cpp
 	gcc -o $@ $? -lcryptopp -lmysqlclient -lpthread -lstdc++ -pedantic -Wall -Wextra
 
-fss.exe: src/FSS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp\
+fis.exe: src/FIS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp\
 	src/HashAlgorithm.cpp src/SHA2.cpp\
 	src/DBConnection.cpp src/Output.cpp src/OutputOffline.cpp src/OutputUpdateDB.cpp src/OutputValidateDB.cpp\
 	src/ParallelExecutor.cpp src/Utils.cpp
