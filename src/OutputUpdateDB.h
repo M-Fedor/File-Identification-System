@@ -7,12 +7,14 @@
 
 #include "DBConnection.h"
 #include "Output.h"
-#include "OutputOffline.h"
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <versionhelpers.h>
 #include <winver.h>
 
+/* Class implements the way to find out useful legitimate information 
+about user-specified files from file system and update reference database 
+using the information on Microsoft Windows platform */
 class OutputUpdateDB : public Output
 {
 public:
@@ -23,6 +25,9 @@ public:
     int outputData(std::string &digest, std::string &name);
 
 private:
+    /* Structure contains string representation of hexadecimal
+    language and code-page codes for navigation in VersionInfo
+    String-tables */
     struct Translation
     {
         std::string language;

@@ -15,6 +15,10 @@
 #include <mysql.h>
 #endif
 
+/* Class implements reentrant low level connection to MySQL/MariaDB DBMS; 
+Provides methods for app-module-specific data selections/insertions;
+Serves as interface for Output modules willing to update database or 
+obtain some file-related information from database */
 class DBConnection
 {
 public:

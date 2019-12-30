@@ -228,7 +228,7 @@ void printVersion()
               << "There is NO WARRANTY, to the extent permitted by law.\n\n";
 }
 
-/* Resolve user-defined options when starting application */
+/* Resolve user-defined options when starting application on UNIX platforms */
 #if defined(__linux__)
 int resolveOptionsUnix(int argc, char **args)
 {
@@ -272,6 +272,7 @@ int resolveOptionsUnix(int argc, char **args)
     }
     return OK;
 }
+/* Resolve user-defined options when starting application on Microsoft Windows platforms */
 #elif defined(_WIN32)
 int resolveOptionsWin(int argc, char **args)
 {

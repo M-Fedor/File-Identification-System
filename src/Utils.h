@@ -18,6 +18,9 @@
 #include <windows.h>
 #endif
 
+/* Definitions of simple general utilities not specific
+ to any component */
+
 int printFailed(const char *errInfo);
 int printFailed(const std::ostringstream &errInfo);
 void printGreen(const char *str);

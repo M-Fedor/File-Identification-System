@@ -11,6 +11,8 @@
 #include "Output.h"
 #include "OutputOffline.h"
 
+/* Class implements validation of files of interest using information
+obtained from reference database; Produces output in specified output file */
 class OutputValidateDB : public Output
 {
 public:

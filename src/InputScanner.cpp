@@ -85,7 +85,7 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
 }
 
 /* Try to open next directory from list of search roots,
-initialize search of this directory properly */
+initialize search of the directory properly */
 int InputScanner::init()
 {
     if (rootDirectories.size() == 0)
@@ -144,6 +144,8 @@ int InputScanner::inputNextFile(std::ifstream &fDescriptor, std::string &pathNam
     return rc;
 }
 
+/* Performs test whether the object defined by path is directory
+based on platform currently in use */
 bool InputScanner::isDirectory(std::string &path)
 {
 #if defined(__linux__)
@@ -154,7 +156,7 @@ bool InputScanner::isDirectory(std::string &path)
 #endif
 }
 
-/* Print error details */
+/* Print error message in common format along with specific error description */
 void InputScanner::printErr(int errNum, const std::ostringstream &errInfo)
 {
     printFailed(errInfo);

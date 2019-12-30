@@ -2,6 +2,7 @@
 
 #if defined(_WIN32)
 
+/* Constructor; set up buffers and data structures for information obtainment */
 OutputUpdateDB::OutputUpdateDB(DBConnection &conn)
     : verStr(NULL)
 {
@@ -20,8 +21,10 @@ OutputUpdateDB::OutputUpdateDB(DBConnection &conn)
     translationList[1].codePage = translationList[3].codePage = std::string("04E4");
 }
 
+/* Destructor */
 OutputUpdateDB::~OutputUpdateDB() {}
 
+/* Get as much relevant information about file as possible */
 int OutputUpdateDB::getFileInfo(std::string &name)
 {
     DWORD dwHandle;
@@ -43,6 +46,7 @@ int OutputUpdateDB::getFileInfo(std::string &name)
     return OK;
 }
 
+/* Get file version information from fixed non-optional binary part of VersionInfo memory block */
 int OutputUpdateDB::getFixedVersion()
 {
     std::stringstream str;
@@ -64,6 +68,7 @@ int OutputUpdateDB::getFixedVersion()
     return OK;
 }
 
+/* Get information about operating system currently in use */
 int OutputUpdateDB::getOSVersion()
 {
     const char *osVersion;
@@ -108,9 +113,11 @@ int OutputUpdateDB::getOSVersion()
     return OK;
 }
 
+/* Get file type from fixed non-optional binary part of VersionInfo memory block */
 int OutputUpdateDB::getType()
 {
-    if (!VerQueryValue((LPVOID)verInfo.get(), TEXT("\\"), (LPVOID *)&fixedVerInfo, (PUINT)&verSize))
+    if (!VerQueryValue(
+            (LPVOID)verInfo.get(), TEXT("\\"), (LPVOID *)&fixedVerInfo, (PUINT)&verSize))
     {
         fileType = "Unknown";
         return FAIL;
@@ -140,6 +147,7 @@ int OutputUpdateDB::getType()
     return OK;
 }
 
+/* Get file version information from variable optional text part of VersionInfo memory block */
 int OutputUpdateDB::getVariableVersion()
 {
     bool foundResult = false;
@@ -162,6 +170,8 @@ int OutputUpdateDB::getVariableVersion()
     return !foundResult;
 }
 
+/* Initialize connection to database and determine current operating system,
+report any failures */
 int OutputUpdateDB::init()
 {
     if (connection.init("INSERT INTO fileinfo"
@@ -177,6 +187,8 @@ int OutputUpdateDB::init()
     return OK;
 }
 
+/* Prepare buffers for prepared statement variable substitution and 
+insert extracted file information into database */
 int OutputUpdateDB::insertData(std::string &digest, std::string &name)
 {
     std::unique_ptr<char[]> digestStr(new char[digest.size() + 1]);
@@ -218,12 +230,14 @@ int OutputUpdateDB::insertData(std::string &digest, std::string &name)
     return rc;
 }
 
+/* Update database with extracted metadata related to files of interest */
 int OutputUpdateDB::outputData(std::string &digest, std::string &name)
 {
     getFileInfo(name);
     return insertData(digest, name);
 }
 
+/* Print error message in common format along with specific error description */
 int OutputUpdateDB::printErr(int errNum, const char *errInfo)
 {
     printFailed(errInfo);

@@ -1,6 +1,6 @@
 #include "OutputValidateDB.h"
 
-/* Constructor, set up the credentials for communication with DBMS */
+/* Constructor; set up buffers for communication with DBMS */
 OutputValidateDB::OutputValidateDB(DBConnection &conn, std::shared_ptr<OutputOffline> out)
     : bufferSizeFactor(1), fOutput(out)
 {
@@ -18,6 +18,7 @@ OutputValidateDB::OutputValidateDB(DBConnection &conn, std::shared_ptr<OutputOff
 /* Destructor */
 OutputValidateDB::~OutputValidateDB() {}
 
+/* Determine nature of examined file */
 void OutputValidateDB::evaluateData(std::string &digest, std::string &name, std::stringstream &str)
 {
     if (!strcmp(fileDigest.get(), digest.data()))
@@ -34,6 +35,10 @@ void OutputValidateDB::evaluateData(std::string &digest, std::string &name, std:
 /* Format data obtained from database into convenient form */
 int OutputValidateDB::formatData(std::string &digest, std::string &name, std::string &data)
 {
+    if (connection.bindResults(
+            fileName.get(), timestamps, fileDigest.get(), fileType.get(), versionInfo))
+        return FAIL;
+
     bool resultNotFound = true;
     std::stringstream outputStr;
 
@@ -64,6 +69,8 @@ int OutputValidateDB::formatData(std::string &digest, std::string &name, std::st
     return OK;
 }
 
+/* Prepare buffers for prepared statement variable substitution and
+obtain file-related data from database */
 int OutputValidateDB::getData(std::string &digest, std::string &name)
 {
     std::unique_ptr<char[]> digestStr(new char[digest.size() + 1]);
@@ -71,13 +78,10 @@ int OutputValidateDB::getData(std::string &digest, std::string &name)
     std::strncpy(digestStr.get(), digest.data(), digest.size() + 1);
     std::strncpy(nameStr.get(), name.data(), name.size() + 1);
 
-    return connection.executeSelect(digestStr.get(), nameStr.get())
-               ? FAIL
-               : connection.bindResults(
-                     fileName.get(), timestamps, fileDigest.get(), fileType.get(), versionInfo);
+    return connection.executeSelect(digestStr.get(), nameStr.get());
 }
 
-/* Initialize communication with DBMS, open output file and prepare statement to be executed, report any failures */
+/* Initialize communication with DBMS, open output file and initialize database connection, report any failures */
 int OutputValidateDB::init()
 {
     if (connection.init("(SELECT file_name, file_created, file_changed, file_registered, file_digest, file_type"
@@ -95,6 +99,7 @@ int OutputValidateDB::init()
     return OK;
 }
 
+/* Produce an output result-string for examined file */
 void OutputValidateDB::makePartialOut(
     std::string &digest, std::string &name, std::stringstream &str)
 {

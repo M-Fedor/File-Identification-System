@@ -2,9 +2,9 @@
 
 # General concepts
 
-The goal of this project is to develop set of applications used for a system file validation and suspicious file identification.
+The goal of this project is to develop set of applications used for a file integrity checking, system file validation and suspicious file identification.
 Applications perform scan of an user-defined file space in order to compute unique identifier for every file based on its contents.
-Then query on well maintained database is executed and all the information available for particular file is given to an user.
+Then query on well maintained reference database is executed and all the information available for particular file is given to an user.
 Using database with knowledge of all the necessary valid system files based on system version, this software is able to identify 
 suspicious system files modified by malware or not permitted subject that can be potencially dangerous for the system and difficult
 to detect.
@@ -65,4 +65,4 @@ cd <project-dir>
 
 Application will obtain all the necessary configuration during user-interactive setup.
 
-For further information, please contact `matej.fedor.mf@gmail.com`.
+For further information, please contact `<matej.fedor.mf@gmail.com>`.

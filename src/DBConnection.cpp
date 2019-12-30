@@ -2,6 +2,7 @@
 
 DBConnection::DBConnection() {}
 
+/* Constructor; set up credentials for communication with DBMS */
 DBConnection::DBConnection(
     const char *host, const char *user, const char *passwd,
     const char *db, unsigned int port, const char *unixSock)
@@ -16,6 +17,7 @@ DBConnection::DBConnection(
     memset(&bind, 0, sizeof(MYSQL_BIND) * MAX_ATTR_COUNT);
 }
 
+/* Destructor */
 DBConnection::~DBConnection()
 {
     if (stmt)
@@ -27,6 +29,8 @@ DBConnection::~DBConnection()
         mysql_close(mysql);
 }
 
+/* Bind query result set to buffers provided as parameters and fetch the entire result set
+at once into local memory */
 int DBConnection::bindResults(char *fileName, std::vector<MYSQL_TIME> &timestamps, char *fileDigest,
                               char *fileType, std::vector<std::shared_ptr<char[]>> &versionInfo)
 {
@@ -43,12 +47,14 @@ int DBConnection::bindResults(char *fileName, std::vector<MYSQL_TIME> &timestamp
     if (mysql_stmt_bind_result(stmt, bind))
         return printErr("Bind MySQL statement results");
 
-    if (mysql_stmt_store_result(stmt)) // Fetch the entire result set at once
+    if (mysql_stmt_store_result(stmt))
         return printErr("Store MySQL statement results");
 
     return OK;
 }
 
+/* Bind buffers provided as parameters to prepared statement variables, set correct indicators
+and execute data insertion */
 int DBConnection::executeInsert(char *fileName, time_t fileCreated, time_t fileChanged, char *fileDigest,
                                 char *fileType, std::vector<char *> &versionInfo)
 {
@@ -74,18 +80,17 @@ int DBConnection::executeInsert(char *fileName, time_t fileCreated, time_t fileC
     return executeStmt();
 }
 
-/* Set and execute the prepared statement in order to get data from database */
+/* Bind buffers provided as parameters to prepared statement variables, set correct indicators
+and execute data selection in order to get data from database */
 int DBConnection::executeSelect(char *digest, char *name)
 {
     char ntsInd = STMT_INDICATOR_NTS;
 
-    // Only two of indicators are necessary for bind when substituting for statement variables (?)
     isNull[0] = false;
     isNull[1] = true;
     paramLen[0] = std::strlen(digest);
     paramLen[1] = std::strlen(name);
 
-    //Bind statement variables to their corresponding substitutions
     setBind(bind[0], MYSQL_TYPE_STRING, digest, 0, &paramLen[0], isNull[0], error[0], ntsInd);
     setBind(bind[1], MYSQL_TYPE_STRING, name, 0, &paramLen[1], isNull[0], error[0], ntsInd);
     setBind(bind[2], MYSQL_TYPE_STRING, digest, 0, &paramLen[0], isNull[0], error[0], ntsInd);
@@ -93,6 +98,7 @@ int DBConnection::executeSelect(char *digest, char *name)
     return executeStmt();
 }
 
+/* Substitute prepared statement variables with bound buffers and execute statement */
 int DBConnection::executeStmt()
 {
     if (mysql_stmt_bind_param(stmt, bind))
@@ -103,6 +109,8 @@ int DBConnection::executeStmt()
     return OK;
 }
 
+/* Fetch another row of result set from local memory; 
+Seek to beginning in case of data truncation for fresh start with resized buffers */
 int DBConnection::fetchData()
 {
     int rc = mysql_stmt_fetch(stmt);
@@ -118,6 +126,7 @@ int DBConnection::fetchData()
     return rc;
 }
 
+/* Initialize DBMS connetion and prepared statement to be executed */
 int DBConnection::init(const char *query)
 {
     mysql = mysql_init(NULL);
@@ -131,7 +140,7 @@ int DBConnection::init(const char *query)
     return OK;
 }
 
-/* Print error details */
+/* Print error message in common format along with specific error description */
 int DBConnection::printErr(const char *errInfo)
 {
     printFailed(errInfo);
@@ -158,6 +167,7 @@ void DBConnection::setBind(
     }
 }
 
+/* Set sizes of buffer being currently in use */
 void DBConnection::setSize(int nameSize, int digestSize, int versionSize)
 {
     this->nameSize = nameSize;
