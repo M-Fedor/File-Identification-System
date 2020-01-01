@@ -84,12 +84,8 @@ int OutputValidateDB::getData(std::string &digest, std::string &name)
 /* Initialize communication with DBMS, open output file and initialize database connection, report any failures */
 int OutputValidateDB::init()
 {
-    if (connection.init("(SELECT file_name, file_created, file_changed, file_registered, file_digest, file_type"
-                        " company_name, product_name, product_version, file_version, file_description, os_combination"
-                        " FROM fileinfo WHERE file_digest = ?) UNION"
-                        " (SELECT file_name, file_created, file_changed, file_registered, file_digest, file_type"
-                        " company_name, product_name, product_version, file_version, file_description, os_combination"
-                        " FROM fileinfo WHERE file_name = ? AND file_digest != ?)"))
+    if (connection.init("(SELECT * FROM recognize_file WHERE file_digest = ?) UNION"
+                        "(SELECT * FROM recognize_file WHERE absolute_path = ? AND file_digest != ?);"))
         return FAIL;
     connection.setSize(NAME_SIZE, DIGEST_SIZE, VERSION_SIZE);
 
