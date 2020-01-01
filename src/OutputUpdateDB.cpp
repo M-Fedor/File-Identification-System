@@ -174,7 +174,7 @@ int OutputUpdateDB::getVariableVersion()
 report any failures */
 int OutputUpdateDB::init()
 {
-    if (connection.init("SELECT * FROM insert_metadata(?,?,?,?,?,?,?,?,?,?,?);"))
+    if (connection.init("SELECT insert_metadata(?,?,?,?,?,?,?,?,?,?,?);"))
         return FAIL;
     if (getOSVersion())
         return FAIL;

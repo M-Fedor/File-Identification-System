@@ -142,9 +142,10 @@ RETURNS INT
                 WHERE company_name = comp AND product_name = p_name AND product_version = p_version
                 ) AS tmp
             WHERE NOT EXISTS (
-                SELECT company_id AS c_id, product_name_id AS p_n_id, product_version_id AS p_v_id
+                SELECT company_id, product_name_id, product_version_id
                 FROM product AS p
-                WHERE p.c_id = tmp.company_id AND p.p_v_id = tmp.product_version_id AND p.p_v_id = tmp.product_version_id
+                WHERE p.company_id = tmp.company_id AND p.product_name_id = tmp.name_id 
+                AND p.product_version_id = tmp.version_id
                 );
         INSERT INTO file_version (file_version) 
             SELECT * FROM (SELECT f_version) AS tmp
@@ -157,8 +158,8 @@ RETURNS INT
         INSERT INTO file_info (absolute_path, time_created, time_modified, file_digest, 
                 file_type_id, product_id, file_version_id, file_description_id)
             SELECT * FROM (
-                SELECT path, FROM_UNIXTIME(t_created), FROM_UNIXTIME(t_modified), f_digest, file_type_id, 
-                    product_id, file_version_id, file_description_id
+                SELECT path, FROM_UNIXTIME(t_created), FROM_UNIXTIME(t_modified), f_digest, type_id, 
+                    product_id, version_id, description_id
                 FROM file_type, product, file_version, file_description
                 WHERE file_type = f_type AND file_version = f_version AND file_description = f_description
                 AND product_id = (
@@ -168,7 +169,8 @@ RETURNS INT
                     )
                 ) AS tmp
             WHERE NOT EXISTS (
-                SELECT absolute_path AS p, file_digest AS d FROM file_info WHERE p = path AND d = f_digest
+                SELECT absolute_path, file_digest FROM file_info 
+                WHERE absolute_path = path AND file_digest = f_digest
                 );
         INSERT INTO os (os_version) 
             SELECT * FROM (SELECT os_ver) AS tmp
@@ -180,8 +182,7 @@ RETURNS INT
                 WHERE absolute_path = path AND file_digest = f_digest AND os_version = os_ver
                 ) AS tmp
             WHERE NOT EXISTS (
-                SELECT file_id, os_id 
-                FROM os_combination AS os_c 
+                SELECT file_id, os_id FROM os_combination AS os_c 
                 WHERE os_c.file_id = tmp.file_id AND os_c.os_id = tmp.os_id
             );
         RETURN (SELECT '0');
