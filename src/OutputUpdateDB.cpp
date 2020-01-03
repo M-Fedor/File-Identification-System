@@ -174,12 +174,7 @@ int OutputUpdateDB::getVariableVersion()
 report any failures */
 int OutputUpdateDB::init()
 {
-    if (connection.init("INSERT INTO fileinfo"
-                        " (file_name, file_created, file_changed, file_registered,"
-                        " file_digest, file_type, company_name, product_name,"
-                        " product_version, file_version, file_description, os_combination)"
-                        " VALUES (?,  FROM_UNIXTIME(?) , FROM_UNIXTIME(?) , NOW(),"
-                        " ?, ?, ?, ?, ?, ?, ?, ?)"))
+    if (connection.init("SELECT insert_metadata(?,?,?,?,?,?,?,?,?,?,?);"))
         return FAIL;
     if (getOSVersion())
         return FAIL;
