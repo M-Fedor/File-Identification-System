@@ -9,6 +9,7 @@ DROP TABLE IF EXISTS product_name;
 DROP TABLE IF EXISTS company;
 DROP TABLE IF EXISTS file_type;
 DROP VIEW IF EXISTS recognize_file;
+DROP VIEW IF EXISTS list_product;
 DROP FUNCTION IF EXISTS insert_metadata;
 
 CREATE TABLE file_type (
@@ -113,9 +114,18 @@ CREATE VIEW recognize_file AS (
         AND i.file_id = comb.file_id AND os.os_id = comb.os_id
 );
 
+CREATE VIEW list_product AS (
+    SELECT company_name, product_name, product_version
+    FROM product AS p, company AS c, product_name AS p_n, product_version AS p_v
+    WHERE 
+        p.company_id = c.company_id AND p.product_name_id = p_n.name_id 
+        AND p.product_version_id = p_v.version_id
+);
+
 DELIMITER //
-CREATE FUNCTION insert_metadata(path VARCHAR(384), t_created INT, t_modified INT, f_digest VARCHAR(64), 
-    f_type VARCHAR(32), comp VARCHAR(64), p_name VARCHAR(64), p_version VARCHAR(32), f_version VARCHAR(32), 
+CREATE FUNCTION insert_metadata(
+    path VARCHAR(384), t_created INT, t_modified INT, f_digest VARCHAR(64), f_type VARCHAR(32), 
+    comp VARCHAR(64), p_name VARCHAR(64), p_version VARCHAR(32), f_version VARCHAR(32), 
     f_description VARCHAR(256), os_ver VARCHAR(32))
 RETURNS INT 
     BEGIN
@@ -144,8 +154,9 @@ RETURNS INT
             WHERE NOT EXISTS (
                 SELECT company_id, product_name_id, product_version_id
                 FROM product AS p
-                WHERE p.company_id = tmp.company_id AND p.product_name_id = tmp.name_id 
-                AND p.product_version_id = tmp.version_id
+                WHERE 
+                    p.company_id = tmp.company_id AND p.product_name_id = tmp.name_id 
+                    AND p.product_version_id = tmp.version_id
                 );
         INSERT INTO file_version (file_version) 
             SELECT * FROM (SELECT f_version) AS tmp
@@ -158,15 +169,20 @@ RETURNS INT
         INSERT INTO file_info (absolute_path, time_created, time_modified, file_digest, 
                 file_type_id, product_id, file_version_id, file_description_id)
             SELECT * FROM (
-                SELECT path, FROM_UNIXTIME(t_created), FROM_UNIXTIME(t_modified), f_digest, type_id, 
+                SELECT 
+                    path, FROM_UNIXTIME(t_created), FROM_UNIXTIME(t_modified), f_digest, type_id, 
                     product_id, version_id, description_id
                 FROM file_type, product, file_version, file_description
-                WHERE file_type = f_type AND file_version = f_version AND file_description = f_description
-                AND product_id = (
-                    SELECT product_id 
-                    FROM product AS p, company AS c, product_name AS p_n, product_version AS p_v
-                    WHERE c.company_name = comp AND p_n.product_name = p_name AND p_v.product_version = p_version
-                    )
+                WHERE 
+                    file_type = f_type AND file_version = f_version AND file_description = f_description
+                    AND product_id = (
+                        SELECT product_id 
+                        FROM product AS p, company AS c, product_name AS p_n, product_version AS p_v
+                        WHERE 
+                            p.company_id = c.company_id AND p.product_name_id = p_n.name_id 
+                            AND p.product_version_id = p_v.version_id AND c.company_name = comp 
+                            AND p_n.product_name = p_name AND p_v.product_version = p_version
+                        )
                 ) AS tmp
             WHERE NOT EXISTS (
                 SELECT absolute_path, file_digest FROM file_info 
