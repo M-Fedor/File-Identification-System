@@ -18,8 +18,7 @@ void getInputOpt();
 void getOutputOpt();
 void printHelp();
 void printVersion();
-int resolveOptionsUnix(int argc, char **args);
-int resolveOptionsWin(int argc, char **args);
+int resolveOptions(int argc, char **args);
 void secureInput(std::string &input);
 
 bool inputFile = false;

@@ -181,12 +181,7 @@ void getOutputOpt()
 
 int main(int argc, char **args)
 {
-#if defined(__linux__)
-    int rc = resolveOptionsUnix(argc, args);
-#elif defined(_WIN32)
-    int rc = resolveOptionsWin(argc, args);
-#endif
-
+    int rc = resolveOptions(argc, args);
     if (rc != OK)
         return (rc == END) ? OK : rc;
 
@@ -230,7 +225,7 @@ void printVersion()
 
 /* Resolve user-defined options when starting application on UNIX platforms */
 #if defined(__linux__)
-int resolveOptionsUnix(int argc, char **args)
+int resolveOptions(int argc, char **args)
 {
     const char *short_options = "fhouVv";
     struct option long_options[] = {{"file", 0, NULL, 'f'},
@@ -274,7 +269,7 @@ int resolveOptionsUnix(int argc, char **args)
 }
 /* Resolve user-defined options when starting application on Microsoft Windows platforms */
 #elif defined(_WIN32)
-int resolveOptionsWin(int argc, char **args)
+int resolveOptions(int argc, char **args)
 {
     for (int i = 1; i < argc; i++)
     {
@@ -283,7 +278,7 @@ int resolveOptionsWin(int argc, char **args)
         else if (!strcmp("-h", args[i]) || !strcmp("--help", args[i]))
         {
             printHelp();
-            return OK;
+            return END;
         }
         else if (!strcmp("-o", args[i]) || !strcmp("--offline", args[i]))
             offline = true;
@@ -294,7 +289,7 @@ int resolveOptionsWin(int argc, char **args)
         else if (!strcmp("-v", args[i]) || !strcmp("--version", args[i]))
         {
             printVersion();
-            return OK;
+            return END;
         }
         else
         {

@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #elif defined(_WIN32)
 #define DEFAULT_SEPARATOR "\\"
+#include <codecvt>
 #include <fileapi.h>
 #endif
 
@@ -26,16 +27,26 @@ public:
   int inputNextFile(std::ifstream &fDescriptor, std::string &pathName);
 
 private:
-  bool isDirectory(std::string &path);
+  int enumerateNextAlternateStream(std::ifstream &fDescriptor, std::string &pathName);
   int findNextFDRec(std::ifstream &fDescriptor, std::string &pathName);
-  void printErr(int errNUm, const std::ostringstream &errInfo);
+  bool hasAlternateStreamDir(std::string &pathName);
+  bool hasAlternateStreamFile(std::string &pathName);
+  bool isDirectory(std::string &path);
+  int loadFile(std::ifstream &fDescriptor, std::string &pathName);
+  int printErr(int errNUm, const std::ostringstream &errInfo);
 
+  bool hasNextAlternateStream;
   std::vector<std::string> absolutePaths;
   std::vector<DIR *> directoryStreams;
   std::vector<std::string> rootDirectories;
 
 #if defined(__linux__)
   struct stat buffer;
+#elif defined(_WIN32)
+  HANDLE nextAlternateStream;
+  std::wstring currentPathNameW;
+  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> converter;
+  WIN32_FIND_STREAM_DATA streamData;
 #endif
 };
 
