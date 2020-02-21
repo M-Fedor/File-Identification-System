@@ -31,20 +31,27 @@ InputScanner::~InputScanner()
 
 int InputScanner::enumerateNextAlternateStream(std::ifstream &fDescriptor, std::string &pathName)
 {
-#if defined(_WIN32)
+#if defined(__linux__)
+    pathName = currentPathName;
+    pathName.append(":").append(currentPosition);
+    size_t streamNameSize = std::strlen(currentPosition) + 1;
+    currentPosition += streamNameSize;
+    attrSize -= streamNameSize;
+    hasNextAlternateStream = (attrSize > 0) ? true : false;
+
+#elif defined(_WIN32)
     std::wstring pathStreamNameW(currentPathNameW);
     pathStreamNameW.append(streamData.cStreamName);
     pathName = converter.to_bytes(pathStreamNameW);
     hasNextAlternateStream =
         FindNextStreamW(nextAlternateStream, (LPVOID *)&streamData) ? true : false;
+#endif
 
     fDescriptor.open(pathName);
     if (fDescriptor.fail())
         return printFailed(static_cast<std::ostringstream &>(
             std::ostringstream() << "Open file " << pathName.data()));
     return OK;
-#endif
-    return UNDEFINED;
 }
 
 /* Iterate through file-system, return next file's opened file descriptor for reading,
@@ -99,7 +106,9 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
 
 bool InputScanner::hasAlternateStreamDir(std::string &pathName)
 {
-#if defined(_WIN32)
+#if defined(__linux__)
+    return hasAlternateStreamFile(pathName);
+#elif defined(_WIN32)
     currentPathNameW = converter.from_bytes(pathName);
     nextAlternateStream =
         FindFirstStreamW(currentPathNameW.data(), FindStreamInfoStandard, (LPVOID *)&streamData, 0);
@@ -107,12 +116,32 @@ bool InputScanner::hasAlternateStreamDir(std::string &pathName)
 
     return hasNextAlternateStream;
 #endif
-    return false;
 }
 
 bool InputScanner::hasAlternateStreamFile(std::string &pathName)
 {
-#if defined(_WIN32)
+#if defined(__linux__)
+    attrSize = getxattr(pathName.data(), "ntfs.streams.list", NULL, 0);
+    hasNextAlternateStream = false;
+    if (attrSize == -1)
+        printErr(errno, static_cast<std::ostringstream &>(
+                            std::ostringstream() << "Obtain list of Alternate Data Streams for object " << pathName));
+    if (attrSize <= 0)
+        return false;
+
+    attr.reset(new char[attrSize + 1]);
+    if (getxattr(pathName.data(), "ntfs.streams.list", attr.get(), attrSize) == -1)
+    {
+        printErr(errno, static_cast<std::ostringstream &>(
+                            std::ostringstream() << "Obtain list of Alternate Data Streams for object " << pathName));
+        return false;
+    }
+    currentPathName = pathName;
+    currentPosition = attr.get();
+    hasNextAlternateStream = true;
+    attr.get()[attrSize] = 0;
+    return true;
+#elif defined(_WIN32)
     currentPathNameW = converter.from_bytes(pathName);
     nextAlternateStream =
         FindFirstStreamW(currentPathNameW.data(), FindStreamInfoStandard, (LPVOID *)&streamData, 0);
@@ -121,7 +150,6 @@ bool InputScanner::hasAlternateStreamFile(std::string &pathName)
                                  : (FindNextStreamW(nextAlternateStream, (LPVOID *)&streamData) ? true : false);
     return hasNextAlternateStream;
 #endif
-    return false;
 }
 
 /* Try to open next directory from list of search roots,

@@ -9,6 +9,8 @@
 #if defined(__linux__)
 #define DEFAULT_SEPARATOR "/"
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/xattr.h>
 #elif defined(_WIN32)
 #define DEFAULT_SEPARATOR "\\"
 #include <codecvt>
@@ -41,6 +43,10 @@ private:
   std::vector<std::string> rootDirectories;
 
 #if defined(__linux__)
+  char *currentPosition;
+  ssize_t attrSize;
+  std::string currentPathName;
+  std::unique_ptr<char[]> attr;
   struct stat buffer;
 #elif defined(_WIN32)
   HANDLE nextAlternateStream;
