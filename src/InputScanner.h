@@ -49,6 +49,9 @@ private:
   std::unique_ptr<char[]> attr;
   struct stat buffer;
 #elif defined(_WIN32)
+  bool getFirstAlternateStream(std::string &pathName);
+  bool getNextAlternateStream(std::string &pathName);
+
   HANDLE nextAlternateStream;
   std::wstring currentPathNameW;
   std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> converter;

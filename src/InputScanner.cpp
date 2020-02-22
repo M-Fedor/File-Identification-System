@@ -38,13 +38,11 @@ int InputScanner::enumerateNextAlternateStream(std::ifstream &fDescriptor, std::
     currentPosition += streamNameSize;
     attrSize -= streamNameSize;
     hasNextAlternateStream = (attrSize > 0) ? true : false;
-
 #elif defined(_WIN32)
     std::wstring pathStreamNameW(currentPathNameW);
     pathStreamNameW.append(streamData.cStreamName);
     pathName = converter.to_bytes(pathStreamNameW);
-    hasNextAlternateStream =
-        FindNextStreamW(nextAlternateStream, (LPVOID *)&streamData) ? true : false;
+    hasNextAlternateStream = getNextAlternateStream(pathName);
 #endif
 
     fDescriptor.open(pathName);
@@ -104,16 +102,44 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
     }
 }
 
+#if defined(_WIN32)
+bool InputScanner::getFirstAlternateStream(std::string &pathName)
+{
+    nextAlternateStream =
+        FindFirstStreamW(currentPathNameW.data(), FindStreamInfoStandard, (LPVOID *)&streamData, 0);
+    if (nextAlternateStream == INVALID_HANDLE_VALUE)
+    {
+        DWORD err = GetLastError();
+        if (err != ERROR_HANDLE_EOF)
+            printFailed(static_cast<std::ostringstream &>(
+                std::ostringstream() << "Obtain Alternate Data Stream for object " << pathName << " (code " << err << ")"));
+        return false;
+    }
+    return true;
+}
+
+bool InputScanner::getNextAlternateStream(std::string &pathName)
+{
+    if (!FindNextStreamW(nextAlternateStream, (LPVOID *)&streamData))
+    {
+        DWORD err = GetLastError();
+        if (err != ERROR_HANDLE_EOF)
+            printFailed(static_cast<std::ostringstream &>(
+                std::ostringstream() << "Obtain Alternate Data Stream for object " << pathName << " (code " << err << ")"));
+        FindClose(nextAlternateStream);
+        return false;
+    }
+    return true;
+}
+#endif
+
 bool InputScanner::hasAlternateStreamDir(std::string &pathName)
 {
 #if defined(__linux__)
     return hasAlternateStreamFile(pathName);
 #elif defined(_WIN32)
     currentPathNameW = converter.from_bytes(pathName);
-    nextAlternateStream =
-        FindFirstStreamW(currentPathNameW.data(), FindStreamInfoStandard, (LPVOID *)&streamData, 0);
-    hasNextAlternateStream = (nextAlternateStream == INVALID_HANDLE_VALUE) ? false : true;
-
+    hasNextAlternateStream = getFirstAlternateStream(pathName);
     return hasNextAlternateStream;
 #endif
 }
@@ -143,11 +169,8 @@ bool InputScanner::hasAlternateStreamFile(std::string &pathName)
     return true;
 #elif defined(_WIN32)
     currentPathNameW = converter.from_bytes(pathName);
-    nextAlternateStream =
-        FindFirstStreamW(currentPathNameW.data(), FindStreamInfoStandard, (LPVOID *)&streamData, 0);
-    hasNextAlternateStream = (nextAlternateStream == INVALID_HANDLE_VALUE)
-                                 ? false
-                                 : (FindNextStreamW(nextAlternateStream, (LPVOID *)&streamData) ? true : false);
+    if (getFirstAlternateStream(pathName))
+        hasNextAlternateStream = getNextAlternateStream(pathName);
     return hasNextAlternateStream;
 #endif
 }
