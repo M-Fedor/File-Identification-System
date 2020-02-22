@@ -9,6 +9,8 @@
 #if defined(__linux__)
 #define DEFAULT_SEPARATOR "/"
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/xattr.h>
 #elif defined(_WIN32)
 #define DEFAULT_SEPARATOR "\\"
 #include <fileapi.h>
@@ -26,16 +28,32 @@ public:
   int inputNextFile(std::ifstream &fDescriptor, std::string &pathName);
 
 private:
-  bool isDirectory(std::string &path);
+  int enumerateNextAlternateStream(std::ifstream &fDescriptor, std::string &pathName);
   int findNextFDRec(std::ifstream &fDescriptor, std::string &pathName);
-  void printErr(int errNUm, const std::ostringstream &errInfo);
+  bool hasAlternateStreamDir(std::string &pathName);
+  bool hasAlternateStreamFile(std::string &pathName);
+  bool isDirectory(std::string &path);
+  int loadFile(std::ifstream &fDescriptor, std::string &pathName);
+  int printErr(int errNUm, const std::ostringstream &errInfo);
 
+  bool hasNextAlternateStream;
   std::vector<std::string> absolutePaths;
   std::vector<DIR *> directoryStreams;
   std::vector<std::string> rootDirectories;
 
 #if defined(__linux__)
+  char *currentPosition;
+  ssize_t attrSize;
+  std::string currentPathName;
+  std::unique_ptr<char[]> attr;
   struct stat buffer;
+#elif defined(_WIN32)
+  bool getFirstAlternateStream(std::string &pathName);
+  bool getNextAlternateStream(std::string &pathName);
+
+  HANDLE nextAlternateStream;
+  std::wstring currentPathNameW;
+  WIN32_FIND_STREAM_DATA streamData;
 #endif
 };
 

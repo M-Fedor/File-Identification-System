@@ -14,7 +14,10 @@
 #define RED 4
 #define YELLOW 6
 #define WHITE 7
+// Uncomment when using Mingw-w64
+#define WC_ERR_INVALID_CHARS 0x80
 
+#include <stringapiset.h>
 #include <windows.h>
 #endif
 
@@ -23,6 +26,7 @@
 
 int printFailed(const char *errInfo);
 int printFailed(const std::ostringstream &errInfo);
+int printFailed(const std::wostringstream &errInfo);
 void printGreen(const char *str);
 void printOrange(const char *str);
 void printRed(const char *str);
@@ -32,6 +36,8 @@ void resetCursor();
 
 #if defined(_WIN32)
 void printColorized(const char *str, int color);
+std::wstring MultiByteToUTF16(std::string &inStr, const int codePage = CP_UTF8);
+std::string UTF16ToUTF8(std::wstring &inStr);
 #endif
 
 #endif
