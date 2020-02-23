@@ -13,7 +13,6 @@
 #include <sys/xattr.h>
 #elif defined(_WIN32)
 #define DEFAULT_SEPARATOR "\\"
-#include <codecvt>
 #include <fileapi.h>
 #endif
 
@@ -54,7 +53,6 @@ private:
 
   HANDLE nextAlternateStream;
   std::wstring currentPathNameW;
-  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> converter;
   WIN32_FIND_STREAM_DATA streamData;
 #endif
 };

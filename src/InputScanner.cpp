@@ -41,7 +41,7 @@ int InputScanner::enumerateNextAlternateStream(std::ifstream &fDescriptor, std::
 #elif defined(_WIN32)
     std::wstring pathStreamNameW(currentPathNameW);
     pathStreamNameW.append(streamData.cStreamName);
-    pathName = converter.to_bytes(pathStreamNameW);
+    pathName = UTF16ToUTF8(pathStreamNameW);
     hasNextAlternateStream = getNextAlternateStream(pathName);
 #endif
 
@@ -105,14 +105,15 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
 #if defined(_WIN32)
 bool InputScanner::getFirstAlternateStream(std::string &pathName)
 {
-    nextAlternateStream =
-        FindFirstStreamW(currentPathNameW.data(), FindStreamInfoStandard, (LPVOID *)&streamData, 0);
+    nextAlternateStream = FindFirstStreamW(
+        currentPathNameW.data(), FindStreamInfoStandard, (LPVOID *)&streamData, 0);
     if (nextAlternateStream == INVALID_HANDLE_VALUE)
     {
         DWORD err = GetLastError();
         if (err != ERROR_HANDLE_EOF)
             printFailed(static_cast<std::ostringstream &>(
-                std::ostringstream() << "Obtain Alternate Data Stream for object " << pathName << " (code " << err << ")"));
+                std::ostringstream() << "Obtain Alternate Data Stream for object "
+                                     << pathName << " (code " << err << ")"));
         return false;
     }
     return true;
@@ -125,7 +126,8 @@ bool InputScanner::getNextAlternateStream(std::string &pathName)
         DWORD err = GetLastError();
         if (err != ERROR_HANDLE_EOF)
             printFailed(static_cast<std::ostringstream &>(
-                std::ostringstream() << "Obtain Alternate Data Stream for object " << pathName << " (code " << err << ")"));
+                std::ostringstream() << "Obtain Alternate Data Stream for object "
+                                     << pathName << " (code " << err << ")"));
         FindClose(nextAlternateStream);
         return false;
     }
@@ -138,7 +140,7 @@ bool InputScanner::hasAlternateStreamDir(std::string &pathName)
 #if defined(__linux__)
     return hasAlternateStreamFile(pathName);
 #elif defined(_WIN32)
-    currentPathNameW = converter.from_bytes(pathName);
+    currentPathNameW = MultiByteToUTF16(pathName);
     hasNextAlternateStream = getFirstAlternateStream(pathName);
     return hasNextAlternateStream;
 #endif
@@ -168,7 +170,7 @@ bool InputScanner::hasAlternateStreamFile(std::string &pathName)
     attr.get()[attrSize] = 0;
     return true;
 #elif defined(_WIN32)
-    currentPathNameW = converter.from_bytes(pathName);
+    currentPathNameW = MultiByteToUTF16(pathName);
     if (getFirstAlternateStream(pathName))
         hasNextAlternateStream = getNextAlternateStream(pathName);
     return hasNextAlternateStream;
