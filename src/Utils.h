@@ -14,6 +14,7 @@
 #define RED 4
 #define YELLOW 6
 #define WHITE 7
+// Uncomment when using Mingw-w64
 #define WC_ERR_INVALID_CHARS 0x80
 
 #include <stringapiset.h>

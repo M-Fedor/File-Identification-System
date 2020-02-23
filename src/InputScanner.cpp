@@ -29,6 +29,9 @@ InputScanner::~InputScanner()
     }
 }
 
+/* Enumerates Alternate Data Stream based on data extracted by corresponding hasAlternateStream() call.
+Fills its open file handle and full name respectively into function parameters, prepares new data 
+associated with next Alternate Data Stream for subsequent call */
 int InputScanner::enumerateNextAlternateStream(std::ifstream &fDescriptor, std::string &pathName)
 {
 #if defined(__linux__)
@@ -103,6 +106,8 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
 }
 
 #if defined(_WIN32)
+/* Opens a new search handle being used in iteration through Alternate Data Streams 
+of particular object and sets up the data associated with the first stream, performs error checking */
 bool InputScanner::getFirstAlternateStream(std::string &pathName)
 {
     nextAlternateStream = FindFirstStreamW(
@@ -119,6 +124,8 @@ bool InputScanner::getFirstAlternateStream(std::string &pathName)
     return true;
 }
 
+/* Searches for the next Alternate Data Stream of particular object if available, sets up 
+the data associated with the next stream, performs error checking */
 bool InputScanner::getNextAlternateStream(std::string &pathName)
 {
     if (!FindNextStreamW(nextAlternateStream, (LPVOID *)&streamData))
@@ -135,6 +142,8 @@ bool InputScanner::getNextAlternateStream(std::string &pathName)
 }
 #endif
 
+/* Verifies, whether a directory specified by pathName has any Alternate Data Streams attached to it.
+Sets up data members necessary for further observation. */
 bool InputScanner::hasAlternateStreamDir(std::string &pathName)
 {
 #if defined(__linux__)
@@ -146,6 +155,8 @@ bool InputScanner::hasAlternateStreamDir(std::string &pathName)
 #endif
 }
 
+/* Verifies, whether a file specified by pathName has any Alternate Data Streams attached to it.
+Sets up data members necessary for further observation. */
 bool InputScanner::hasAlternateStreamFile(std::string &pathName)
 {
 #if defined(__linux__)

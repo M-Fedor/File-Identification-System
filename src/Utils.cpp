@@ -99,6 +99,8 @@ void resetCursor()
 }
 
 #if defined(_WIN32)
+/* Converts UTF8 string to UTF16. As a fallback, on failure assumes an ANSI-Code-Page encoded 
+input string in subsequent recursive call. */
 std::wstring MultiByteToUTF16(std::string &inStr, const int codePage)
 {
     std::wstring outStr;
@@ -130,6 +132,7 @@ std::wstring MultiByteToUTF16(std::string &inStr, const int codePage)
     return outStr;
 }
 
+/* Converts UTF16 string to UTF8 one. */
 std::string UTF16ToUTF8(std::wstring &inStr)
 {
     std::string outStr;
