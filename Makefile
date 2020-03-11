@@ -13,6 +13,11 @@ endif
 
 default: $(TARGET)
 
+all: default util
+
+util: sysUtility/SysUpdate.cpp
+	cl.exe -W4 -EHsc -permissive- .\sysUtility\SysUpdate.cpp .\src\Utils.cpp -link ole32.lib oleAut32.lib comsuppw.lib
+
 fis: src/FIS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp\
 	src/HashAlgorithm.cpp src/SHA2.cpp\
 	src/DBConnection.cpp src/Output.cpp src/OutputOffline.cpp src/OutputValidateDB.cpp\
@@ -27,10 +32,16 @@ fis.exe: src/FIS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp\
     -llibmariadb -lpthread -lstdc++ -lversion -pedantic -Wall -Wextra
 
 .PHONY: clean install
-clean:
+clean: 
 	-rm $(TARGET)
+	-rm SysUpdate.exe
+	-rm SysUpdate.obj
+	-rm Utils.obj
 
 install:
 	mkdir -p $(INSTDIR)/.
 	-mv $(TARGET) $(INSTDIR)/.
 	-cp conf/$(TARGET).manifest $(INSTDIR)/.
+	-mv SysUpdate.exe $(INSTDIR)/.
+	-mv SysUpdate.obj $(INSTDIR)/.
+	-mv Utils.obj $(INSTDIR)/.
