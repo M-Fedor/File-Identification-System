@@ -16,7 +16,7 @@ default: $(TARGET)
 all: default util
 
 util: sysUtility/SysUpdate.cpp
-	cl.exe -W4 -EHsc -permissive- .\sysUtility\SysUpdate.cpp .\src\Utils.cpp -link ole32.lib oleAut32.lib comsuppw.lib
+	cl.exe -W4 -EHsc -permissive- .\sysUtility\SysUpdate.cpp .\src\Utils.cpp -link ole32.lib oleAut32.lib
 
 fis: src/FIS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp\
 	src/HashAlgorithm.cpp src/SHA2.cpp\
