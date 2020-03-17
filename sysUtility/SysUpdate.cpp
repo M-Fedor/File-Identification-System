@@ -119,9 +119,9 @@ int SysUpdate::init()
 
 	res = CoCreateInstance(CLSID_UpdateInstaller, NULL, CLSCTX_INPROC_SERVER, IID_IUpdateInstaller2, (void **)&uInstaller);
 	if (res != S_OK)
-		return printErr(res, "Create instance of IUpdateSession");
+		return printErr(res, "Create instance of IUpdateInstaller2");
 
-	res = CoCreateInstance(CLSID_UpdateCollection, NULL, CLSCTX_INPROC_SERVER, IID_IUpdateCollection, (void **)&uCollection);
+	res = CoCreateInstance(CLSID_UpdateCollection, NULL, CLSCTX_INPROC_SERVER, IID_IUpdateCollection, (void **)&uCollectionExclusive);
 	if (res != S_OK)
 		return printErr(res, "Create instance of IUpdateCollection");
 
@@ -134,41 +134,47 @@ int SysUpdate::init()
 int SysUpdate::installUpdates()
 {
 	IInstallationResult *installRes;
+	LONG count;
 	OperationResultCode resultCode;
 	VARIANT_BOOL rebootReq;
 
 	uInstaller->put_ForceQuiet(VARIANT_TRUE);
-	uInstaller->put_Updates(uCollection);
-	res = uInstaller->Install(&installRes);
-	if (res != S_OK)
-		return printErr(res, "Download updates");
+	uInstaller->get_RebootRequiredBeforeInstallation(&rebootReq);
+	if (rebootReq == VARIANT_TRUE)
+		return REBOOT;
 
-	installRes->get_ResultCode(&resultCode);
-	installRes->get_RebootRequired(&rebootReq);
-	std::wcout << L"Instalation result: " << enumerateResultCode(resultCode) << L"\n"
-			   << L"Reboot required: " << ((!rebootReq) ? L"No" : L"Yes") << L"\n\n";
-
-	if (resultCode == orcSucceededWithErrors)
+	uCollection->get_Count(&count);
+	for (LONG i = 0; i < count; i++)
 	{
-		LONG uCount;
-		IUpdateInstallationResult *updateRes;
+		uCollection->get_Item(i, &uItem);
+		uCollectionExclusive->Clear();
+		uCollectionExclusive->Insert(0, uItem);
 
-		std::cout << "//////// FAILED UPDATE INSTALLATION ////////\n\n";
+		uInstaller->put_Updates(uCollectionExclusive);
+		res = uInstaller->Install(&installRes);
+		if (res != S_OK)
+			return printErr(res, "Install updates");
 
-		uCollection->get_Count(&uCount);
-		for (LONG i = 0; i < uCount; i++)
+		installRes->get_ResultCode(&resultCode);
+		installRes->get_RebootRequired(&rebootReq);
+		std::wcout << L"Instalation result: " << enumerateResultCode(resultCode) << L"\n"
+				   << L"Reboot required: " << ((!rebootReq) ? L"No" : L"Yes") << L"\n\n";
+
+		if (resultCode == orcAborted || resultCode == orcFailed)
 		{
-			installRes->GetUpdateResult(i, &updateRes);
-			updateRes->get_ResultCode(&resultCode);
-			if (resultCode == orcFailed)
-			{
-				uCollection->get_Item(i, &uItem);
-				printUpdateInfo(uItem, std::wstring());
-			}
+			std::cout << "//////// FAILED UPDATE INSTALLATION ////////\n\n";
+			printUpdateInfo(uItem, std::wstring());
 		}
 	}
 
-	return (!rebootReq) ? OK : REBOOT;
+	return (rebootReq == VARIANT_FALSE) ? OK : REBOOT;
+}
+
+bool SysUpdate::isEmptyCollection(IUpdateCollection *coll)
+{
+	LONG count;
+	coll->get_Count(&count);
+	return (!count) ? true : false;
 }
 
 int SysUpdate::listNextUpdateItem()
@@ -281,14 +287,20 @@ int SysUpdate::searchUpdates()
 	searchRes->get_Updates(&uCollection);
 	collections.push_back(uCollection);
 
-	return OK;
+	return isEmptyCollection(uCollection) ? END : OK;
 }
 
 int SysUpdate::update()
 {
 	std::cout << "Searching for updates...\n\n";
-	if (searchUpdates())
+	int rc = searchUpdates();
+	if (rc == FAIL)
 		return FAIL;
+	else if (rc == END)
+	{
+		std::cout << "No updates found!\n";
+		return OK;
+	}
 
 	if (verbose)
 		while (listNextUpdateItem() != UNDEFINED)
@@ -299,8 +311,9 @@ int SysUpdate::update()
 		return FAIL;
 
 	std::cout << "Installing updates...\n";
-	int rc = installUpdates();
+	rc = installUpdates();
 
+	std::cout << "Done!\n";
 	return rc;
 }
 #endif

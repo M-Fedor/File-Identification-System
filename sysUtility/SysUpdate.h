@@ -27,6 +27,7 @@ private:
     const wchar_t *enumerateRebootBehaviour(InstallationRebootBehavior reboot);
     const wchar_t *enumerateResultCode(OperationResultCode code);
     int installUpdates();
+    bool isEmptyCollection(IUpdateCollection *coll);
     int listNextUpdateItem();
     int printErr(HRESULT errCode, const char *errInfo);
     int printUpdateInfo(IUpdate *item, std::wstring indent);
@@ -37,6 +38,7 @@ private:
     ISearchResult *searchRes;
     IUpdate *uItem;
     IUpdateCollection *uCollection;
+    IUpdateCollection *uCollectionExclusive;
     IUpdateDownloader *uDownloader;
     IUpdateInstaller2 *uInstaller;
     IUpdateSearcher *uSearcher;
