@@ -1,319 +1,90 @@
 #include "SysUpdate.h"
 
 #if defined(_WIN32)
-int main()
+
+int execute()
 {
-	SysUpdate update(true);
+    SysUpdateImp sysUpdate(verbose);
 
-	if (update.init())
-		return FAIL;
-	if (update.update())
-		return FAIL;
+    std::cout << "Initializing...\n";
+    if (sysUpdate.init())
+        return FAIL;
 
-	return OK;
+    std::cout << "Executing...\n";
+    if (list)
+        sysUpdate.list();
+    else if (update)
+    {
+        int rc = sysUpdate.update();
+        if (rc)
+            return rc;
+    }
+    return OK;
 }
 
-SysUpdate::SysUpdate(bool verbose) : verbose(verbose) {}
-SysUpdate::~SysUpdate() { CoUninitialize(); }
-
-int SysUpdate::downloadUpdates()
+int main(int argc, char **args)
 {
-	IDownloadResult *downloadRes;
-	OperationResultCode resultCode;
+    int rc = resolveOptions(argc, args);
+    if (rc)
+        return (rc == END) ? END : rc;
 
-	uDownloader->put_Updates(uCollection);
-	res = uDownloader->Download(&downloadRes);
-	if (res != S_OK)
-		return printErr(res, "Download updates");
-
-	downloadRes->get_ResultCode(&resultCode);
-	std::wcout << L"Download result: " << enumerateResultCode(resultCode) << L"\n\n";
-
-	if (resultCode == orcSucceededWithErrors)
-	{
-		LONG uCount;
-		IUpdateDownloadResult *updateRes;
-
-		std::cout << "//////// FAILED UPDATE DOWNLOAD ////////\n\n";
-
-		uCollection->get_Count(&uCount);
-		for (LONG i = 0; i < uCount; i++)
-		{
-			downloadRes->GetUpdateResult(i, &updateRes);
-			updateRes->get_ResultCode(&resultCode);
-			if (resultCode == orcFailed)
-			{
-				uCollection->get_Item(i, &uItem);
-				printUpdateInfo(uItem, std::wstring());
-			}
-		}
-	}
-
-	return OK;
+    return execute();
 }
 
-const wchar_t *SysUpdate::enumerateInstallImpact(InstallationImpact impact)
+int resolveOptions(int argc, char **args)
 {
-	switch (impact)
-	{
-	case 0:
-		return L"Normal";
-	case 1:
-		return L"Minor";
-	case 2:
-		return L"Requires Exclusive Handling";
-	default:
-		return L"Invalid Value";
-	}
+    for (int i = 1; i < argc; i++)
+    {
+        if (!strcmp("-h", args[i]) || !strcmp("--help", args[i]))
+        {
+            printHelp();
+            return END;
+        }
+        else if (!strcmp("-l", args[i]) || !strcmp("--list", args[i]))
+        {
+            list = true;
+            update = false;
+        }
+        else if (!strcmp("-u", args[i]) || !strcmp("--update", args[i]))
+        {
+            update = true;
+            list = false;
+        }
+        else if (!strcmp("-V", args[i]) || !strcmp("--verbose", args[i]))
+            verbose = true;
+        else if (!strcmp("-v", args[i]) || !strcmp("--version", args[i]))
+        {
+            printVersion();
+            return END;
+        }
+        else
+        {
+            printHelp();
+            return FAIL;
+        }
+    }
+
+    return OK;
 }
 
-const wchar_t *SysUpdate::enumerateRebootBehaviour(InstallationRebootBehavior reboot)
+void printHelp()
 {
-	switch (reboot)
-	{
-	case 0:
-		return L"Never Reboots";
-	case 1:
-		return L"Always Requires Reboot";
-	case 2:
-		return L"Can Request Reboot";
-	default:
-		return L"Invalid Value";
-	}
+    std::cout << "\nSystem Update Utility Application v0.1\n\n"
+              << "Usage: SysUpdate.exe [options]\n"
+              << "Options:\n"
+              << "\t-h\t--help\t\tPrints this help.\n"
+              << "\t-l\t--list\t\tPrints details for all the available updates.\n"
+              << "\t-u\t--update\tInstalls all currently available OS updates.\n"
+              << "\t-V\t--verbose\tEnables verbose mode, prints details for all the available updates before installation.\n"
+              << "\t-v\t--version\tPrints SysUpdate.exe version and licence information.\n\n"
+              << "In case of any problems, please contact <matej.fedor.mf@gmail.com>.\n\n";
 }
 
-const wchar_t *SysUpdate::enumerateResultCode(OperationResultCode code)
+void printVersion()
 {
-	switch (code)
-	{
-	case 2:
-		return L"Succeded";
-	case 3:
-		return L"Succeded with errors";
-	case 4:
-		return L"Failed";
-	case 5:
-		return L"Aborted";
-	default:
-		return L"Invalid value";
-	}
-}
-
-int SysUpdate::init()
-{
-	res = CoInitialize(NULL);
-	if (res != S_OK)
-		return printFailed("Initialize COM library");
-
-	res = CoCreateInstance(CLSID_UpdateSession, NULL, CLSCTX_INPROC_SERVER, IID_IUpdateSession, (void **)&uSession);
-	if (res != S_OK)
-		return printErr(res, "Create instance of IUpdateSession");
-
-	res = uSession->CreateUpdateSearcher(&uSearcher);
-	if (res != S_OK)
-		return printErr(res, "Create instance of IUpdateSearcher");
-
-	res = uSession->CreateUpdateDownloader(&uDownloader);
-	if (res != S_OK)
-		return printErr(res, "Create instance of IUpdateDownloader");
-
-	res = CoCreateInstance(CLSID_UpdateInstaller, NULL, CLSCTX_INPROC_SERVER, IID_IUpdateInstaller2, (void **)&uInstaller);
-	if (res != S_OK)
-		return printErr(res, "Create instance of IUpdateInstaller2");
-
-	res = CoCreateInstance(CLSID_UpdateCollection, NULL, CLSCTX_INPROC_SERVER, IID_IUpdateCollection, (void **)&uCollectionExclusive);
-	if (res != S_OK)
-		return printErr(res, "Create instance of IUpdateCollection");
-
-	currentIndents.push_back(std::wstring());
-	currentPositions.push_back(0);
-
-	return OK;
-}
-
-int SysUpdate::installUpdates()
-{
-	IInstallationResult *installRes;
-	LONG count;
-	OperationResultCode resultCode;
-	VARIANT_BOOL rebootReq;
-
-	uInstaller->put_ForceQuiet(VARIANT_TRUE);
-	uInstaller->get_RebootRequiredBeforeInstallation(&rebootReq);
-	if (rebootReq == VARIANT_TRUE)
-		return REBOOT;
-
-	uCollection->get_Count(&count);
-	for (LONG i = 0; i < count; i++)
-	{
-		uCollection->get_Item(i, &uItem);
-		uCollectionExclusive->Clear();
-		uCollectionExclusive->Insert(0, uItem);
-
-		uInstaller->put_Updates(uCollectionExclusive);
-		res = uInstaller->Install(&installRes);
-		if (res != S_OK)
-			return printErr(res, "Install updates");
-
-		installRes->get_ResultCode(&resultCode);
-		installRes->get_RebootRequired(&rebootReq);
-		std::wcout << L"Instalation result: " << enumerateResultCode(resultCode) << L"\n"
-				   << L"Reboot required: " << ((!rebootReq) ? L"No" : L"Yes") << L"\n\n";
-
-		if (resultCode == orcAborted || resultCode == orcFailed)
-		{
-			std::cout << "//////// FAILED UPDATE INSTALLATION ////////\n\n";
-			printUpdateInfo(uItem, std::wstring());
-		}
-	}
-
-	return (rebootReq == VARIANT_FALSE) ? OK : REBOOT;
-}
-
-bool SysUpdate::isEmptyCollection(IUpdateCollection *coll)
-{
-	LONG count;
-	coll->get_Count(&count);
-	return (!count) ? true : false;
-}
-
-int SysUpdate::listNextUpdateItem()
-{
-	IUpdateCollection *coll;
-	LONG bundledCount;
-
-	collections.back()->get_Count(&bundledCount);
-	if (currentPositions.back() == bundledCount)
-	{
-		collections.pop_back();
-		currentIndents.pop_back();
-		currentPositions.pop_back();
-
-		std::wcout << ((currentIndents.size()) ? currentIndents.back() : L"")
-				   << L"//////// BUNDLED UPDATE LIST END ////////\n\n";
-
-		return (collections.size()) ? listNextUpdateItem() : UNDEFINED;
-	}
-
-	collections.back()->get_Item(currentPositions.back(), &uItem);
-	uItem->get_BundledUpdates(&coll);
-	coll->get_Count(&bundledCount);
-	currentPositions.back()++;
-	printUpdateInfo(uItem, currentIndents.back());
-
-	if (bundledCount)
-	{
-		std::wcout << currentIndents.back() << L"//////// BUNDLED UPDATE LIST START ////////\n\n";
-
-		collections.push_back(coll);
-		currentPositions.push_back(0);
-		std::wstring indentStr = currentIndents.back();
-		currentIndents.push_back(indentStr.append(L"\t\t"));
-		return listNextUpdateItem();
-	}
-	else
-		return OK;
-}
-
-int SysUpdate::printErr(HRESULT errCode, const char *errInfo)
-{
-	printFailed(errInfo);
-	std::cerr << std::system_category().message(errCode) << " " << std::hex << errCode << "\n";
-	return FAIL;
-}
-
-int SysUpdate::printUpdateInfo(IUpdate *item, std::wstring indent)
-{
-	BSTR title;
-	item->get_Title(&title);
-	std::wcout << indent << L"Title: " << title << L"\n";
-
-	UpdateType type;
-	item->get_Type(&type);
-	std::wcout << indent << L"Type: " << ((type == 1) ? L"software" : L"driver") << L"\n";
-
-	BSTR severity;
-	item->get_MsrcSeverity(&severity);
-	std::wcout << indent << L"Severity: " << (SysStringLen(severity) ? severity : L"") << L"\n";
-
-	BSTR description;
-	item->get_Description(&description);
-	std::wcout << indent << L"Description: " << (SysStringLen(description) ? description : L"") << L"\n";
-
-	IUpdateIdentity *uIdentity;
-	LONG revisionNum;
-	item->get_Identity(&uIdentity);
-	uIdentity->get_RevisionNumber(&revisionNum);
-	std::wcout << indent << L"Revision number: " << revisionNum << L"\n";
-
-	IInstallationBehavior *installBehav;
-	InstallationImpact impact;
-	InstallationRebootBehavior reboot;
-	item->get_InstallationBehavior(&installBehav);
-	installBehav->get_Impact(&impact);
-	installBehav->get_RebootBehavior(&reboot);
-	std::wcout << indent << L"Instalation impact: " << enumerateInstallImpact(impact) << L"\n"
-			   << indent << L"Instalation reboot behaviour: " << enumerateRebootBehaviour(reboot) << L"\n";
-
-	IStringCollection *strCollection;
-	LONG count;
-	item->get_KBArticleIDs(&strCollection);
-	strCollection->get_Count(&count);
-	for (LONG i = 0; i < count; i++)
-	{
-		BSTR str;
-		strCollection->get_Item(i, &str);
-		std::wcout << indent << L"ArticleID: " << (SysStringLen(str) ? str : L"") << L"\n";
-	}
-
-	IUpdateCollection *coll;
-	item->get_BundledUpdates(&coll);
-	coll->get_Count(&count);
-	std::wcout << indent << L"Contains bundled updates: " << count << L"\n\n";
-
-	return OK;
-}
-
-int SysUpdate::searchUpdates()
-{
-	uSearcher->put_IncludePotentiallySupersededUpdates(VARIANT_TRUE);
-	uSearcher->put_Online(VARIANT_TRUE);
-
-	BSTR criteria = SysAllocString(L"IsInstalled=0");
-	res = uSearcher->Search(criteria, &searchRes);
-	if (res != S_OK)
-		return printErr(res, "Search for updates");
-
-	searchRes->get_Updates(&uCollection);
-	collections.push_back(uCollection);
-
-	return isEmptyCollection(uCollection) ? END : OK;
-}
-
-int SysUpdate::update()
-{
-	std::cout << "Searching for updates...\n\n";
-	int rc = searchUpdates();
-	if (rc == FAIL)
-		return FAIL;
-	else if (rc == END)
-	{
-		std::cout << "No updates found!\n";
-		return OK;
-	}
-
-	if (verbose)
-		while (listNextUpdateItem() != UNDEFINED)
-			;
-
-	std::cout << "Downloading updates...\n";
-	if (downloadUpdates())
-		return FAIL;
-
-	std::cout << "Installing updates...\n";
-	rc = installUpdates();
-
-	std::cout << "Done!\n";
-	return rc;
+    std::cout << "\nSystem Update Utility Application v0.1\n\n"
+              << "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\n"
+              << "This is free software : you are free to change and redistribute it.\n"
+              << "There is NO WARRANTY, to the extent permitted by law.\n\n";
 }
 #endif
