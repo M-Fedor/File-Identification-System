@@ -2,6 +2,7 @@
 
 #if defined(_WIN32)
 
+/* Execute specified operation using user-defined options. */
 int execute()
 {
     SysUpdateImp sysUpdate(verbose);
@@ -31,6 +32,7 @@ int main(int argc, char **args)
     return execute();
 }
 
+/* Resolve user-defined options when starting application. */
 int resolveOptions(int argc, char **args)
 {
     for (int i = 1; i < argc; i++)
@@ -67,6 +69,7 @@ int resolveOptions(int argc, char **args)
     return OK;
 }
 
+/* Print basic usage information. */
 void printHelp()
 {
     std::cout << "\nSystem Update Utility Application v0.1\n\n"
@@ -80,6 +83,7 @@ void printHelp()
               << "In case of any problems, please contact <matej.fedor.mf@gmail.com>.\n\n";
 }
 
+/* Print version and licence information. */
 void printVersion()
 {
     std::cout << "\nSystem Update Utility Application v0.1\n\n"

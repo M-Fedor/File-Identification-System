@@ -2,9 +2,14 @@
 
 #if defined(_WIN32)
 
+/* Constructor */
 SysUpdateImp::SysUpdateImp(bool verbose) : verbose(verbose), searchRes(NULL) {}
+
+/* Destructor */
 SysUpdateImp::~SysUpdateImp() { CoUninitialize(); }
 
+/* Attempts to download updates contained in UpdateCollection from Windows Update site. 
+Prints information about update items that failed to download. */
 int SysUpdateImp::downloadUpdates()
 {
 	IDownloadResult *downloadRes;
@@ -30,7 +35,7 @@ int SysUpdateImp::downloadUpdates()
 		{
 			downloadRes->GetUpdateResult(i, &updateRes);
 			updateRes->get_ResultCode(&resultCode);
-			if (resultCode == orcFailed)
+			if (resultCode == orcFailed || resultCode == orcAborted)
 			{
 				uCollection->get_Item(i, &uItem);
 				printUpdateInfo(uItem, std::wstring());
@@ -41,6 +46,7 @@ int SysUpdateImp::downloadUpdates()
 	return OK;
 }
 
+/* Translates InstallationImpact-codes into comprehensible user information. */
 const wchar_t *SysUpdateImp::enumerateInstallImpact(InstallationImpact impact)
 {
 	switch (impact)
@@ -56,6 +62,7 @@ const wchar_t *SysUpdateImp::enumerateInstallImpact(InstallationImpact impact)
 	}
 }
 
+/* Translates RebootBehaviour-codes into comprehensible user information. */
 const wchar_t *SysUpdateImp::enumerateRebootBehaviour(InstallationRebootBehavior reboot)
 {
 	switch (reboot)
@@ -71,6 +78,7 @@ const wchar_t *SysUpdateImp::enumerateRebootBehaviour(InstallationRebootBehavior
 	}
 }
 
+/* Translates ResultCodes into comprehensible user information. */
 const wchar_t *SysUpdateImp::enumerateResultCode(OperationResultCode code)
 {
 	switch (code)
@@ -88,6 +96,8 @@ const wchar_t *SysUpdateImp::enumerateResultCode(OperationResultCode code)
 	}
 }
 
+/* Initializes SysUpdate data members, allocates necessary memory.
+Calling any method before initialization may lead to application crash! */
 int SysUpdateImp::init()
 {
 	res = CoInitialize(NULL);
@@ -120,6 +130,8 @@ int SysUpdateImp::init()
 	return OK;
 }
 
+/* Attempts to install updates contained in UpdateCollection after they are downloaded
+from Windows Update site. Prints information about update items that failed to install. */
 int SysUpdateImp::installUpdates()
 {
 	IInstallationResult *installRes;
@@ -159,6 +171,7 @@ int SysUpdateImp::installUpdates()
 	return (rebootReq == VARIANT_FALSE) ? OK : REBOOT;
 }
 
+/* Checks whether UpdateCollection contains any UpdateItems */
 bool SysUpdateImp::isEmptyCollection(IUpdateCollection *coll)
 {
 	LONG count;
@@ -166,19 +179,19 @@ bool SysUpdateImp::isEmptyCollection(IUpdateCollection *coll)
 	return (!count) ? true : false;
 }
 
+/* Lists updates that are currently available for download on Windows Update site. */
 void SysUpdateImp::list()
 {
-	if (!searchRes)
-	{
-		std::cout << "Searching for updates...\n";
-		searchUpdates();
-	}
+	std::cout << "Searching for updates...\n";
+	searchUpdates();
 
 	std::cout << "Listing updates...\n\n";
 	while (listNextUpdateItem() != UNDEFINED)
 		;
 }
 
+/* Recursively iterates trough update item structure printing information for 
+next UpdateItem or UpdateCollection. */
 int SysUpdateImp::listNextUpdateItem()
 {
 	IUpdateCollection *coll;
@@ -217,6 +230,7 @@ int SysUpdateImp::listNextUpdateItem()
 		return OK;
 }
 
+/* Prints error message in common format. */
 int SysUpdateImp::printErr(HRESULT errCode, const char *errInfo)
 {
 	printFailed(errInfo);
@@ -224,6 +238,7 @@ int SysUpdateImp::printErr(HRESULT errCode, const char *errInfo)
 	return FAIL;
 }
 
+/* Prints details of specified UpdateItem. */
 int SysUpdateImp::printUpdateInfo(IUpdate *item, std::wstring indent)
 {
 	BSTR title;
@@ -276,6 +291,8 @@ int SysUpdateImp::printUpdateInfo(IUpdate *item, std::wstring indent)
 	return OK;
 }
 
+/* Attempts to search for available updates on Windows Update site using certain criteria.
+Extracts resulting UpdateCOllection intended for further processing. */
 int SysUpdateImp::searchUpdates()
 {
 	uSearcher->put_IncludePotentiallySupersededUpdates(VARIANT_TRUE);
@@ -292,6 +309,8 @@ int SysUpdateImp::searchUpdates()
 	return isEmptyCollection(uCollection) ? END : OK;
 }
 
+/* Updates OS using SysUpdate functionality 
+or informs user about possible errors during the process. */
 int SysUpdateImp::update()
 {
 	std::cout << "Searching for updates...\n\n";

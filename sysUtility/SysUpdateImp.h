@@ -12,6 +12,9 @@
 #include <vector>
 #include <wuapi.h>
 
+/* Class implements methods for manual verbose search, download and installation of OS updates.
+Implementation uses Microsoft Services, especialy Windows Update site. 
+Supported for Windows XP and later. */
 class SysUpdateImp
 {
 public:
