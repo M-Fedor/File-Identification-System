@@ -19,4 +19,5 @@
 *.bin
 *.ipch
 *.exe
+*.obj
 build/*
