@@ -1,5 +1,5 @@
-#ifndef FIS_h
-#define FIS_h
+#ifndef FileIdentificationSystem_h
+#define FileIdentificationSystem_h
 
 #include "ParallelExecutor.h"
 #include <unistd.h>

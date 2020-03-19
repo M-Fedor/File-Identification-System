@@ -1,4 +1,4 @@
-#include "FIS.h"
+#include "FileIdentificationSystem.h"
 
 /* Executes data validation when object configuration is done */
 int execute(ParallelExecutor *exec)

@@ -4,11 +4,11 @@ ifeq ($(OS), Windows_NT)
 	CRYPTOPP_LIB_DIR=$(CRYPTOPP_INCLUDE_DIR)
 	MYSQL_INCLUDE_DIR=C:/Program\ Files/MariaDB/MariaDB\ Connector\ C\ 64-bit/include
 	MYSQL_LIB_DIR=C:/Program\ Files/MariaDB/MariaDB\ Connector\ C\ 64-bit/lib
-	TARGET=fis.exe
+	TARGET=File-Identification-System.exe
 endif
 ifeq ($(shell uname), Linux)
 	INSTDIR=$(HOME)/git/File-Identification-System/build
-	TARGET=fis
+	TARGET=File-Identification-System
 endif
 
 default: $(TARGET)
@@ -18,13 +18,13 @@ all: default util
 util: sysUtility/SysUpdate.cpp sysUtility/SysUpdateImp.cpp  src/Utils.cpp
 	cl.exe -W4 -EHsc -permissive- $? -link ole32.lib oleAut32.lib
 
-fis: src/FIS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp\
+File-Identification-System: src/FileIdentificationSystem.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp\
 	src/HashAlgorithm.cpp src/SHA2.cpp\
 	src/DBConnection.cpp src/Output.cpp src/OutputOffline.cpp src/OutputValidateDB.cpp\
 	src/ParallelExecutor.cpp src/Utils.cpp
 	gcc -o $@ $? -lcryptopp -lmysqlclient -lpthread -lstdc++ -std=c++11 -pedantic -Wall -Wextra
 
-fis.exe: src/FIS.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp\
+File-Identification-System.exe: src/FileIdentificationSystem.cpp src/Input.cpp src/InputFile.cpp src/InputScanner.cpp\
 	src/HashAlgorithm.cpp src/SHA2.cpp\
 	src/DBConnection.cpp src/Output.cpp src/OutputOffline.cpp src/OutputUpdateDB.cpp src/OutputValidateDB.cpp\
 	src/ParallelExecutor.cpp src/Utils.cpp
