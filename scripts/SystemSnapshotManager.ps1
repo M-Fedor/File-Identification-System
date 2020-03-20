@@ -33,11 +33,7 @@ $logFile = $projectPath
 if (!(Test-Path "$logFile\data\")) {
     New-Item -Path "$logFile\data\" -ItemType Directory
 }
-$logFile = "$logFile\data\"
-if (!(Test-Path "$logFile\SysUpdate.log")) {
-    New-Item -Path "$logFile\SysUpdate.log" -ItemType File
-}
-$logFile = "$logFile\SysUpdate.log"
+$logFile = "$logFile\data\SystemSnapshotManager.log"
 
 
 Add-Content -Path $logFile -Value "-----------------------------------------------------------------`n$(Get-Date)`n"
@@ -95,7 +91,7 @@ if ($phase -eq 2) {
 }
 
 Add-Content -Path $logFile -Value "`nCreating and storing snapshot of current state of file system...`n"
-Get-Content -Path $confFileFis | & $projectPath\build\File-Identification-System.exe --offline 2>&1> Out-Null
+Get-Content -Path $confFileFis | & $projectPath\build\File-Identification-System.exe --offline 2>&1>> $logFile
 $exitCode = $LASTEXITCODE
 
 if ($exitCode -eq 0) {
@@ -104,9 +100,3 @@ if ($exitCode -eq 0) {
 }
 Add-Content -Path $logFile -Value "Phase 3: FAILED!`n`n"
 exit
-
-
-
-
-
-
