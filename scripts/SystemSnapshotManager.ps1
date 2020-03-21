@@ -5,13 +5,13 @@ $confFileMgr = "$projectPath\conf\SystemSnapshotManager.conf"
 
 # Evaluate user parameters
 function printHelp() {
-    Write-Output "System Snapshot Manager v0.1`n"
-    Write-Output "Usage: SystemSnapshotManager [options]"
-    Write-Output "Options:"
-    Write-Output "`t-h`t--help`t`tPrints this help."
-    Write-Output "`t`t--turn-off`tSystem Snapshot Manager will NOT be started on system boot."
-    Write-Output "`t`t--turn-on`tSystem Snapshot Manager will be started on every system boot.`n"
-    Write-Output "In case of any problems, please contact `<matej.fedor.mf@gmail.com>.`n";
+    Write-Output "System Snapshot Manager v0.1`n
+                  Usage: SystemSnapshotManager [options]
+                  Options:
+                  `t-h`t--help`t`tPrints this help.
+                  `t`t--turn-off`tSystem Snapshot Manager will NOT be started on system boot.
+                  `t`t--turn-on`tSystem Snapshot Manager will be started on every system boot.`n
+                  In case of any problems, please contact `<matej.fedor.mf@gmail.com>.`n";
 }
 
 $option = $args[0]
@@ -50,33 +50,33 @@ Add-Content -Path $logFile -Value "Checking phase of snapshot creation from conf
 [int]$phase = Get-Content -Path $confFileMgr
 
 if ($phase -eq 0) {
-    Add-Content -Path $logFile -Value "Phase $phase`: No action requested"
+    Add-Content -Path $logFile -Value "Phase $phase`: No action requested`n`n"
     exit
 }
 
 if ($phase -eq 1) {
     Add-Content -Path $logFile -Value "Phase $phase`: Update operating system`n"
-    & $projectPath\build\SysUpdate.exe --verbose --list *>> $logFile
+    & $projectPath\build\SysUpdate.exe --verbose --list *>&1 | Add-Content -Path $logFile
     $exitCode = $LASTEXITCODE
 
     Add-Content -Path $logFile -Value "Exited with code $exitCode"
     if ($exitCode -eq 1) { 
-        Add-Content -Path $logFile -Value "Exiting!"
+        Add-Content -Path $logFile -Value "Exiting!`n`n"
         exit 
     }
 
     $phase++
     Set-Content -Path $confFileMgr -Value $phase
     if ($exitCode -eq 2) {
-        Add-Content -Path $logFile -Value "Rebooting..."
+        Add-Content -Path $logFile -Value "Rebooting...`n`n"
         Restart-Computer -Force
     }
 }
 
-Add-Content -Path $logFile -Value "Phase $($phase - 1)`: DONE!"
+Add-Content -Path $logFile -Value "Phase $($phase - 1)`: DONE!`n"
 
 if ($phase -eq 2) {
-    Add-Content -Path $logFile -Value "`nPhase $phase`: Update other packages`n"
+    Add-Content -Path $logFile -Value "Phase $phase`: Update other packages`n"
 
     # Run all custom scripts for other software package update
     Get-ChildItem -Path "$projectPath\scripts\custom" | ForEach-Object {
@@ -87,15 +87,18 @@ if ($phase -eq 2) {
 
     $phase++
     Set-Content -Path $confFileMgr -Value $phase
-    Add-Content -Path $logFile -Value "Phase $($phase - 1)`: DONE!"
+    Add-Content -Path $logFile -Value "Phase $($phase - 1)`: DONE!`n"
 }
 
-Add-Content -Path $logFile -Value "`nCreating and storing snapshot of current state of file system...`n"
-Get-Content -Path $confFileFis | & $projectPath\build\File-Identification-System.exe --offline 2>&1>> $logFile
+Add-Content -Path $logFile -Value "Creating and storing snapshot of current state of file system...`n"
+Get-Content -Path $confFileFis | & $projectPath\build\File-Identification-System.exe --offline *>&1 | 
+                                 Select-Object -Skip 3 | Add-Content -Path $logFile
 $exitCode = $LASTEXITCODE
 
+Add-Content -Path $logFile -Value "Exited with code $exitCode"
 if ($exitCode -eq 0) {
     Add-Content -Path $logFile -Value "Phase 3: DONE!`n`n"
+    Set-Content -Path $confFileMgr -Value 1
     exit
 }
 Add-Content -Path $logFile -Value "Phase 3: FAILED!`n`n"
