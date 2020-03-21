@@ -1,4 +1,4 @@
-#include "FIS.h"
+#include "FileIdentificationSystem.h"
 
 /* Executes data validation when object configuration is done */
 int execute(ParallelExecutor *exec)
@@ -197,9 +197,9 @@ void printHelp()
 {
     std::cout << "\nFile Identification System v0.1\n\n"
 #if defined(__linux__)
-              << "Usage: fis [options]\n"
+              << "Usage: File-Identification-System [options]\n"
 #elif defined(_WIN32)
-              << "Usage: fis.exe [options]\n"
+              << "Usage: File-Identification-System.exe [options]\n"
 #endif
               << "Options:\n"
               << "\t-f\t--file\t\tInput for validation is expected to be obtained from the file"
