@@ -1,4 +1,4 @@
-$projectPath = "$HOME\git\File-Identification-System\"
+$projectPath = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
 
 $confFileFis = "$projectPath\conf\FileIdentificationSystem.conf"
 $confFileMgr = "$projectPath\conf\SystemSnapshotManager.conf"
@@ -56,7 +56,7 @@ if ($phase -eq 0) {
 
 if ($phase -eq 1) {
     Add-Content -Path $logFile -Value "Phase $phase`: Update operating system`n"
-    & $projectPath\build\SysUpdate.exe --verbose --list *>&1 | Add-Content -Path $logFile
+    & $projectPath\build\SysUpdate.exe --verbose --update *>&1 | Add-Content -Path $logFile
     $exitCode = $LASTEXITCODE
 
     Add-Content -Path $logFile -Value "Exited with code $exitCode"
@@ -91,7 +91,7 @@ if ($phase -eq 2) {
 }
 
 Add-Content -Path $logFile -Value "Creating and storing snapshot of current state of file system...`n"
-Get-Content -Path $confFileFis | & $projectPath\build\File-Identification-System.exe --offline *>&1 | 
+Get-Content -Path $confFileFis | & $projectPath\build\File-Identification-System.exe --update *>&1 | 
                                  Select-Object -Skip 3 | Add-Content -Path $logFile
 $exitCode = $LASTEXITCODE
 

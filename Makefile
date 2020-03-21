@@ -1,5 +1,5 @@
 ifeq ($(OS), Windows_NT)
-	INSTDIR=$(USERPROFILE)/git/File-Identification-System/build
+	INSTDIR=build
 	CRYPTOPP_INCLUDE_DIR=C:/Program\ Files/Cryptopp
 	CRYPTOPP_LIB_DIR=$(CRYPTOPP_INCLUDE_DIR)
 	MYSQL_INCLUDE_DIR=C:/Program\ Files/MariaDB/MariaDB\ Connector\ C\ 64-bit/include
@@ -8,7 +8,7 @@ ifeq ($(OS), Windows_NT)
 	TARGET=File-Identification-System.exe
 endif
 ifeq ($(shell uname), Linux)
-	INSTDIR=$(HOME)/git/File-Identification-System/build
+	INSTDIR=build
 	PLATFORM=Unix
 	TARGET=File-Identification-System
 endif
@@ -33,11 +33,10 @@ File-Identification-System.exe: src/FileIdentificationSystem.cpp src/Input.cpp s
 	gcc -o $@ $? -I $(CRYPTOPP_INCLUDE_DIR) -I $(MYSQL_INCLUDE_DIR) -L $(CRYPTOPP_LIB_DIR) -lcryptopp -L $(MYSQL_LIB_DIR)\
     -llibmariadb -lpthread -lstdc++ -std=c++11 -lversion -pedantic -Wall -Wextra
 
-.PHONY: clean install install-admin
+.PHONY: clean install
 
 clean: clean-$(PLATFORM)
 install: install-$(PLATFORM)
-install-admin: install-$(PLATFORM)-admin
 
 clean-Win: 
 	-rm $(TARGET)
@@ -57,9 +56,6 @@ install-Win:
 	-mv SysUpdateImp.obj $(INSTDIR)/.
 	-mv Utils.obj $(INSTDIR)/.
 	-cp conf/$(TARGET).manifest $(INSTDIR)/.
-	
-install-Win-admin:
-	cp scripts\SystemSnapshotManager.ps1 $(USERPROFILE)\AppData\Roaming\Microsoft\Windows\Start\ Menu\Programs\StartUp\SystemSnapshotManager.bat
 
 install-Unix:
 	mkdir -p $(INSTDIR)/.
