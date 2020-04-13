@@ -179,11 +179,15 @@ bool SysUpdateImp::isEmptyCollection(IUpdateCollection *coll)
 	return (!count) ? true : false;
 }
 
-/* Lists updates that are currently available for download on Windows Update site. */
+/* Lists updates that are currently available for download on Windows Update site.
+Search operation is executed once per session only. */
 void SysUpdateImp::list()
 {
-	std::cout << "Searching for updates...\n";
-	searchUpdates();
+	if (!searchRes)
+	{
+		std::cout << "Searching for updates...\n";
+		searchUpdates();
+	}
 
 	std::cout << "Listing updates...\n\n";
 	while (listNextUpdateItem() != UNDEFINED)
@@ -324,7 +328,11 @@ int SysUpdateImp::update()
 	}
 
 	if (verbose)
-		list();
+	{
+		std::cout << "Listing updates...\n\n";
+		while (listNextUpdateItem() != UNDEFINED)
+		;
+	}
 
 	std::cout << "Downloading updates...\n";
 	if (downloadUpdates())
