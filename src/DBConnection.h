@@ -32,7 +32,7 @@ public:
     DBConnection &operator=(const DBConnection &) = delete;
     DBConnection &operator=(DBConnection &&c) = default;
 
-    int bindResults(char *fileName, std::vector<MYSQL_TIME> &timestamps, char *fileDigest,
+    int bindResults(char *fileName, char *fileDigest, std::vector<MYSQL_TIME> &timestamps, 
                     char *fileType, std::vector<std::shared_ptr<char[]>> &versionInfo);
     int executeInsert(char *fileName, time_t fileCreated, time_t fileChanged, char *fileDigest,
                       char *fileType, std::vector<char *> &versionInfo);

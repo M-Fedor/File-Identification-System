@@ -102,7 +102,7 @@ CREATE TABLE os_combination (
 
 CREATE VIEW recognize_file AS (
     SELECT  
-        absolute_path, time_created, time_modified, time_registered, file_digest, 
+        absolute_path, file_digest, time_created, time_modified, time_registered,  
         file_type, company_name, product_name, product_version, file_version, file_description, os_version
     FROM    
         file_info AS i, file_type AS t, product AS p, company AS c, product_name AS p_n, 

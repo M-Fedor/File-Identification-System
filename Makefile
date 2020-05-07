@@ -55,7 +55,7 @@ install-Unix:
 	-mv $(TARGET) $(INSTDIR)/.
 
 install-web:
-	sudo cp -r webUtility/. $(WEB_INST_DIR)
+	cp -r webUtility/. $(WEB_INST_DIR)
 
 install-Win:
 	mkdir -p $(INSTDIR)/.
