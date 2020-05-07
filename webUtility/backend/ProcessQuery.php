@@ -1,5 +1,6 @@
 <?php
 define('BASE_PATH_PREFIX', '../');
+define('FILE_ROW_ELEMENT_COUNT', 15);
 require('ContentGenerator.php');
 require('DBConnection.php');
 
@@ -65,7 +66,7 @@ function process_result_file()
     $result = [];
     while ($line = fgetcsv($fd, 0))
     {
-        if (count($line) != DEFAULT_ROW_ELEMENT_COUNT)
+        if (count($line) != FILE_ROW_ELEMENT_COUNT)
             return $gen->generate_bad_request();
         array_push($result, $line);
     }

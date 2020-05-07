@@ -21,29 +21,23 @@ OutputValidateDB::~OutputValidateDB() {}
 /* Determine nature of examined file */
 void OutputValidateDB::evaluateData(std::string &digest, std::string &name, std::stringstream &str)
 {
-    if (!strcmp(fileDigest.get(), digest.data()))
-    {
-        if (!strcmp(fileName.get(), name.data()))
-            str << "\tVALID_FILE\n";
-        else
-            str << "\tDIFFERENT_FILE_NAME_OR_FILE_LOCATION\n";
-    }
-    else
-        str << "\tSUSPICIOS_FILE\n";
+    const char *status;
+
+    status = (!std::strcmp(fileName.get(), name.data())) ? "valid," : "warning,";
+    status = (std::strcmp(fileDigest.get(), digest.data())) ? "suspicious," : status;
+
+    str << status;
 }
 
 /* Format data obtained from database into convenient form */
 int OutputValidateDB::formatData(std::string &digest, std::string &name, std::string &data)
 {
     if (connection.bindResults(
-            fileName.get(), timestamps, fileDigest.get(), fileType.get(), versionInfo))
+            fileName.get(), fileDigest.get(), timestamps, fileType.get(), versionInfo))
         return FAIL;
 
     bool resultNotFound = true;
     std::stringstream outputStr;
-
-    outputStr << name << "\n"
-              << digest << "\n";
 
     int rc = connection.fetchData();
     resultNotFound = !rc ? false : true;
@@ -63,7 +57,13 @@ int OutputValidateDB::formatData(std::string &digest, std::string &name, std::st
     }
 
     if (resultNotFound)
-        outputStr << "FILE_UNKNOWN\n";
+    {
+        outputStr << "unknown," << name << "," << digest;
+        for(int i = 0; i < MAX_ATTR_COUNT; i++)
+            outputStr << ",";
+        outputStr << "\n";
+    }
+
     data = std::move(outputStr.str());
 
     return OK;
@@ -100,15 +100,16 @@ void OutputValidateDB::makePartialOut(
     std::string &digest, std::string &name, std::stringstream &str)
 {
     evaluateData(digest, name, str);
-    str << "\t\t" << fileName.get() << ", " << fileDigest.get()
-        << ", " << fileType.get() << ", ";
+    str << name << "," << digest << "," << fileName.get() << "," << fileDigest.get();
 
     for (auto &time : timestamps)
-        str << time.day << "." << time.month << "." << time.year << " "
-            << time.hour << ":" << time.minute << ":" << time.second << ", ";
+        str << "," << time.day << "." << time.month << "." << time.year << " "
+            << time.hour << ":" << time.minute << ":" << time.second;
+
+    str << "," << fileType.get();
 
     for (auto &info : versionInfo)
-        str << ", " << info.get();
+        str << "," << info.get();
     str << "\n";
 }
 
