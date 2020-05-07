@@ -1,6 +1,6 @@
 <?php
-define('OK', 0);
-define('FAIL', 1);
+define('OK', True);
+define('FAIL', False);
 
 class DBConnection 
 {
@@ -16,6 +16,8 @@ class DBConnection
 
     function __destruct() 
     {
+        if ($this->result)
+            $this->result->close();
         if ($this->stmt)
             $this->stmt->close();
         if ($this->connection)
@@ -64,10 +66,11 @@ class DBConnection
         return OK;
     }
 
+    var $result;
+
     private $connection;
     private $db_name;
     private $password;
-    private $result;
     private $server_address;
     private $stmt;
     private $user_name;
