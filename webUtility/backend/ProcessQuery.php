@@ -44,8 +44,13 @@ function process_hash_file()
     if (!$fd)
         return $gen->generate_server_error();
 
-    while ($path_name = fgets($fd) && $digest = fgets($fd))
+    while (True)
     {
+        $path_name = fgets($fd);
+        $digest = fgets($fd);
+        if (!$path_name || !$digest)
+            break;
+
         if (!$conn->execute_select($digest, $path_name))
             return $gen->generate_server_error();
         $gen->generate_result_mysql($digest, $path_name, $conn->result);
@@ -74,7 +79,7 @@ function process_result_file()
     fclose($fd);
     $gen->generate_result_file($result);
 }
-    
+
 if (!empty($_FILES['file']['tmp_name'])) 
     process_file();
 else if (!empty($_FILES['hash_file']['tmp_name']))

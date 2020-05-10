@@ -63,8 +63,8 @@ class ContentGenerator
         for ($i = 0; $i < $rows_count; $i++)
         {
             $row = $result->fetch_row();
-            $status = ($original_path == $row['absolute_path']) ? 'valid' : 'warning';
-            $status = ($original_digest != $row['file_digest']) ? 'suspicious' : $status;
+            $status = ($original_path == $row[0]) ? 'valid' : 'warning';
+            $status = ($original_digest != $row[1]) ? 'suspicious' : $status;
 
             $this->result_content .=    "\t<tr class=\"$status\">\n
                                             \t\t<td>$original_path</td>\n

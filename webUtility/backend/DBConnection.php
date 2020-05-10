@@ -24,12 +24,15 @@ class DBConnection
             $this->connection->close();
     }
 
-    function execute_select($digest, $file_name)
+    function execute_select(&$digest, &$path_name)
     {
         if ($this->result)
             $this->result->close();
 
-        if (!$this->stmt->bind_param('sss', $digest, $file_name, $digest)) {
+        $digest = (substr($digest, -1) == "\n") ? substr($digest, 0, -1) : $digest;
+        $path_name = (substr($path_name, -1) == "\n") ? substr($path_name, 0, -1) : $path_name;
+
+        if (!$this->stmt->bind_param('sss', $digest, $path_name, $digest)) {
             echo "Binding parameters failed: (" . $this->stmt->errno . ") " . $this->stmt->error;
             return FAIL;
         }
@@ -57,7 +60,7 @@ class DBConnection
         }    
 
         $this->stmt = $this->connection->prepare('(SELECT * FROM recognize_file WHERE file_digest = ?) UNION
-                                                  (SELECT * FROM recognize_file WHERE absolute_path = ? AND file_digest != ?);');
+                                                  (SELECT * FROM recognize_file WHERE absolute_path = ? AND file_digest != ?)');
         if (!$this->stmt) {
             echo "Prepare failed: (" . $this->connection->errno . ") " . $this->connection->error;
             return FAIL;
