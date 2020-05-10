@@ -113,8 +113,8 @@ void getInputOpt()
                 (std::cout << "Want to specify another directory? [y/n]: ").flush();
                 std::getline(std::cin, rootDir);
             } while (rootDir.size() == 0);
-        } while (!strcmp(rootDir.data(), "Y") || !strcmp(rootDir.data(), "y") ||
-                 !strcmp(rootDir.data(), "yes"));
+        } while (!std::strcmp(rootDir.data(), "Y") || !std::strcmp(rootDir.data(), "y") ||
+                 !std::strcmp(rootDir.data(), "yes"));
     }
     (std::cout << "Regular expression for input filtering [.*]: ").flush();
     std::getline(std::cin, regexTarget);
@@ -281,20 +281,20 @@ int resolveOptions(int argc, char **args)
 {
     for (int i = 1; i < argc; i++)
     {
-        if (!strcmp("-f", args[i]) || !strcmp("--file", args[i]))
+        if (!std::strcmp("-f", args[i]) || !std::strcmp("--file", args[i]))
             inputFile = true;
-        else if (!strcmp("-h", args[i]) || !strcmp("--help", args[i]))
+        else if (!std::strcmp("-h", args[i]) || !std::strcmp("--help", args[i]))
         {
             printHelp();
             return END;
         }
-        else if (!strcmp("-o", args[i]) || !strcmp("--offline", args[i]))
+        else if (!std::strcmp("-o", args[i]) || !std::strcmp("--offline", args[i]))
             offline = true;
-        else if (!strcmp("-u", args[i]) || !strcmp("--update", args[i]))
+        else if (!std::strcmp("-u", args[i]) || !std::strcmp("--update", args[i]))
             update = true;
-        else if (!strcmp("-V", args[i]) || !strcmp("--verbose", args[i]))
+        else if (!std::strcmp("-V", args[i]) || !std::strcmp("--verbose", args[i]))
             verbose = true;
-        else if (!strcmp("-v", args[i]) || !strcmp("--version", args[i]))
+        else if (!std::strcmp("-v", args[i]) || !std::strcmp("--version", args[i]))
         {
             printVersion();
             return END;
