@@ -21,6 +21,7 @@ void printVersion();
 int resolveOptions(int argc, char **args);
 void secureInput(std::string &input);
 
+bool enableDataStreams = false;
 bool inputFile = false;
 bool offline = false;
 bool update = false;

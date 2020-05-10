@@ -24,6 +24,7 @@ public:
   InputScanner(std::vector<std::string> &rootDirectories, const char *pattern = ".*");
   ~InputScanner();
 
+  void setEnableDataStreams(bool enable);
   int init();
   int inputNextFile(std::ifstream &fDescriptor, std::string &pathName);
 
@@ -36,6 +37,7 @@ private:
   int loadFile(std::ifstream &fDescriptor, std::string &pathName);
   int printErr(int errNUm, const std::ostringstream &errInfo);
 
+  bool enableDataStreams;
   bool hasNextAlternateStream;
   std::vector<std::string> absolutePaths;
   std::vector<DIR *> directoryStreams;
