@@ -219,7 +219,7 @@ void printHelp()
 #if defined(_WIN32)
               << "\t-u\t--update\t\tUpdate mode; provides user with means for feeding extracted"
               << " file metadata into database.\n"
-              << "\t\t\t\tIf NOT set, Validation mode is the default setting, a connection to database is "
+              << "\t\t\t\t\tIf NOT set, Validation mode is the default setting, a connection to database is "
               << "tried to be created in order to validate data.\n"
 #endif
               << "\t-V\t--verbose\t\tEnables verbose mode.\n"
