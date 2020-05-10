@@ -2,7 +2,7 @@
 
 /* Constructor, set root of search as single directory */
 InputScanner::InputScanner(
-    std::string &rootDirectory, const char *pattern) : hasNextAlternateStream(false)
+    std::string &rootDirectory, const char *pattern) : enableDataStreams(false), hasNextAlternateStream(false)
 {
     rootDirectories.push_back(std::move(rootDirectory));
     regex = std::regex(pattern);
@@ -10,7 +10,7 @@ InputScanner::InputScanner(
 
 /* Constructor, set roots of serach as list of directories */
 InputScanner::InputScanner(
-    std::vector<std::string> &rootDirectories, const char *pattern) : hasNextAlternateStream(false)
+    std::vector<std::string> &rootDirectories, const char *pattern) : enableDataStreams(false), hasNextAlternateStream(false)
 {
     this->rootDirectories = std::move(rootDirectories);
     regex = std::regex(pattern);
@@ -28,6 +28,9 @@ InputScanner::~InputScanner()
         absolutePaths.pop_back();
     }
 }
+
+/* Set control flag for NTFS alternate data streams processing */
+void InputScanner::setEnableDataStreams(bool enable) { enableDataStreams = enable; }
 
 /* Enumerates Alternate Data Stream based on data extracted by corresponding hasAlternateStream() call.
 Fills its open file handle and full name respectively into function parameters, prepares new data 
@@ -159,6 +162,8 @@ bool InputScanner::hasAlternateStreamDir(std::string &pathName)
 Sets up data members necessary for further observation. */
 bool InputScanner::hasAlternateStreamFile(std::string &pathName)
 {
+    if(!enableDataStreams)
+        return false;
 #if defined(__linux__)
     attrSize = getxattr(pathName.data(), "ntfs.streams.list", NULL, 0);
     hasNextAlternateStream = false;
