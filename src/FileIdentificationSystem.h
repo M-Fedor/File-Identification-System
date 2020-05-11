@@ -16,6 +16,7 @@ int executeInFileMode();
 int executeInScannerMode();
 void getInputOpt();
 void getOutputOpt();
+std::string normalizeInputPath(std::string &path);
 void printHelp();
 void printVersion();
 int resolveOptions(int argc, char **args);

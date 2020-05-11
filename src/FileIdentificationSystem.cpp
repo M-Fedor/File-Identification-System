@@ -109,7 +109,7 @@ void getInputOpt()
                 (std::cout << "Root-of-search directory []: ").flush();
                 std::getline(std::cin, rootDir);
             } while (rootDir.size() == 0);
-            rootDirectories.push_back(std::string(rootDir));
+            rootDirectories.push_back(normalizeInputPath(rootDir));
             do
             {
                 (std::cout << "Want to specify another directory? [y/n]: ").flush();
@@ -179,6 +179,49 @@ void getOutputOpt()
     int rc = std::atoi(value.data());
     nCores = (value.size() == 0 || rc <= 0) ? 2 * std::thread::hardware_concurrency() : rc;
     std::cout << "\n";
+}
+
+/* Removes duplicit directory separators and ensures that directory separator terminates the path */
+std::string normalizeInputPath(std::string &path)
+{
+    size_t pos = 0, posNext = 0;
+    std::string normPath;
+
+#if defined(__linux__)
+    const char *searchSeq = "/";
+#elif defined(_WIN32)
+    const char *searchSeq = "/\\";
+#endif
+
+    while (true)
+    {
+        size_t removeTokenLength = 0;
+        pos = path.find_first_of(searchSeq, pos);
+        if (pos == std::string::npos)
+            break;
+
+        posNext = pos;
+        do
+        {
+            posNext = path.find_first_of(searchSeq, posNext + 1);
+            if (posNext == pos + removeTokenLength + 1)
+                removeTokenLength++;
+        } while (posNext == pos + removeTokenLength);
+        
+        path.replace(pos, 1, DEFAULT_SEPARATOR);
+        if (removeTokenLength) 
+        {
+            normPath = path.substr(0, pos + 1).append(path.substr(pos + removeTokenLength + 1));
+            path = std::move(normPath);
+        } 
+
+        pos++;
+    }
+
+    if (path.find_last_of(DEFAULT_SEPARATOR) != path.size() - 1)
+        path.append(DEFAULT_SEPARATOR);
+
+    return path;
 }
 
 int main(int argc, char **args)

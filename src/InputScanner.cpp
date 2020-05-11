@@ -205,7 +205,7 @@ int InputScanner::init()
 
     do // Do until some directory is opened successfully
     {
-        path = rootDirectories.back().append(DEFAULT_SEPARATOR);
+        path = rootDirectories.back();
         dirStream = opendir(path.data());
         if (dirStream == NULL)
             printErr(errno, static_cast<std::ostringstream &>(
