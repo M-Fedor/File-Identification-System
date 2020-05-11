@@ -37,24 +37,24 @@ int resolveOptions(int argc, char **args)
 {
     for (int i = 1; i < argc; i++)
     {
-        if (!strcmp("-h", args[i]) || !strcmp("--help", args[i]))
+        if (!std::strcmp("-h", args[i]) || !std::strcmp("--help", args[i]))
         {
             printHelp();
             return END;
         }
-        else if (!strcmp("-l", args[i]) || !strcmp("--list", args[i]))
+        else if (!std::strcmp("-l", args[i]) || !std::strcmp("--list", args[i]))
         {
             list = true;
             update = false;
         }
-        else if (!strcmp("-u", args[i]) || !strcmp("--update", args[i]))
+        else if (!std::strcmp("-u", args[i]) || !std::strcmp("--update", args[i]))
         {
             update = true;
             list = false;
         }
-        else if (!strcmp("-V", args[i]) || !strcmp("--verbose", args[i]))
+        else if (!std::strcmp("-V", args[i]) || !std::strcmp("--verbose", args[i]))
             verbose = true;
-        else if (!strcmp("-v", args[i]) || !strcmp("--version", args[i]))
+        else if (!std::strcmp("-v", args[i]) || !std::strcmp("--version", args[i]))
         {
             printVersion();
             return END;

@@ -16,11 +16,13 @@ int executeInFileMode();
 int executeInScannerMode();
 void getInputOpt();
 void getOutputOpt();
+std::string normalizeInputPath(std::string &path);
 void printHelp();
 void printVersion();
 int resolveOptions(int argc, char **args);
 void secureInput(std::string &input);
 
+bool enableDataStreams = false;
 bool inputFile = false;
 bool offline = false;
 bool update = false;
