@@ -57,7 +57,6 @@ button:hover, .button:hover, .button.active {background: #e2b529; color: #fff;}
 #data table {border-collapse: collapse; table-layout: fixed; width: 100%; position: relative;}
 #data th, td {min-width: 200px; width: 200px; white-space: nowrap; padding: 10px; text-align: left; overflow: hidden; text-overflow: ellipsis;}
 #data td {border-bottom: 1px solid #ccc;}
-/*#data tr.suspicious, #data tr.warning, #data tr.error, #data tr.valid {color: #fff;}*/
 #data tr.suspicious {background: rgba(217, 83, 79, 0.4);}
 #data tr.warning {background: rgba(240, 173, 78, 0.4);}
 #data tr.error {background: rgba(217, 83, 79, 0.4);}

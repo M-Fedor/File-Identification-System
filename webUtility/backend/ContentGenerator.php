@@ -22,7 +22,7 @@ class ContentGenerator
     {
         include(BASE_PATH_PREFIX . 'frontend/head.html');
 
-        echo "<div id=\"wrapper_out\">\n    <div id=\"wrapper\">\n";
+        echo "<div id=\"wrapper_out\">\n<div id=\"wrapper\">\n";
 
         include(BASE_PATH_PREFIX . 'frontend/header.html');
 
@@ -130,7 +130,7 @@ class ContentGenerator
     private function generate_result_unknown(&$file_name, &$digest, &$path_name)
     {
         $this->result_content .=    
-                "\t<tr class=\"unknown\">\n\t\t<td>$file_name</td><td>$path_name</td>\n\t\t<td>$digest</td>\n";
+            "\t<tr class=\"unknown\">\n\t\t<td>$file_name</td><td>$path_name</td>\n\t\t<td>$digest</td>\n";
 
         for ($i = 0; $i < DEFAULT_ROW_ELEMENT_COUNT; $i++)
             $this->result_content .= "\t\t<td>Unknown</td>\n";
