@@ -1,42 +1,70 @@
 <?php
 define('DEFAULT_ROW_ELEMENT_COUNT', 12);
+define('FILE_ROW_ELEMENT_COUNT', 15);
 
 class ContentGenerator
 {
     function __construct() 
     { 
-        $this->isSuccess = True;
+        $this->counts['error'] = $this->counts['suspicious'] = 
+            $this->counts['valid'] = $this->counts['warning'] = 0;
+        $this->is_success = True;
         $this->result_content = ''; 
     }
 
     function generate_bad_request() 
     {
-        $this->result_content .= file_get_contents(BASE_PATH_PREFIX . 'frontend/bad_request.html');
-        $this->isSuccess = False;
+        $this->result_content .= "<p class=\"alert\">Request is invalid. Some required fields are not filled.</p>";
+        $this->is_success = False;
     }
 
     function generate_content()
     {
-        $this->generate_header();
-        $this->generate_body();
+        include(BASE_PATH_PREFIX . 'frontend/head.html');
+
+        echo "<div id=\"wrapper_out\">\n    <div id=\"wrapper\">\n";
+
+        include(BASE_PATH_PREFIX . 'frontend/header.html');
+
+        echo "<div id=\"content\">";
+
+        require(BASE_PATH_PREFIX . 'frontend/basic_content.html');
+
+        echo "<div id=\"result\">";
+
         $this->generate_result();
-        $this->generate_footer();
+
+        echo "</div>\n</div>\n</div>\n</div>\n\n";
+        
+        include(BASE_PATH_PREFIX . 'frontend/assets/graphics.html');
+        echo "<script src=\"/frontend/functions/functions.js\"></script>\n";
     }
 
     function generate_result_file(&$result)
     {
         $rows_count = count($result);
-        $row_length = count($result[0]);
 
         for($i = 0; $i < $rows_count; $i++)
         {
-            $status = $result[$i][0];
-            $this->result_content .= "\t<tr class=\"$status\">\n";
+            $row_length = count($result[$i]);
 
-            for ($j = 1; $j < $row_length; $j++)
-                $this->result_content .= "\t\t<td>" . $result[$i][$j] . "</td>\n";
-                 
-            $this->result_content .= "\t</tr>";
+            if ($row_length == FILE_ROW_ELEMENT_COUNT)
+            {
+                $status = $result[$i][0];
+                $this->result_content .= "\t<tr class=\"$status\">\n";
+
+                for ($j = 1; $j < $row_length; $j++)
+                    $this->result_content .= "\t\t<td>" . $result[$i][$j] . "</td>\n";
+                 $this->result_content .= "\t</tr>";
+            }
+            else
+            {
+                $status = 'error';
+                $this->result_content .= "\t<tr class=\"$status\">\n<td>File name</td>\n
+                <td colspan=14>Found result has incorrect format. Either filename contains \",\" or you're just trying us.</td>\n";
+            }
+
+            $this->counts[$status]++;
         }
     }
 
@@ -45,16 +73,7 @@ class ContentGenerator
         $rows_count = $result->num_rows;
 
         if ($rows_count == 0)
-        {
-            $this->result_content .=    "\t<tr class=\"unknown\">\n
-                                            \t\t<td>$original_path</td>\n
-                                            \t\t<td>$original_digest</td>\n";
-
-            for ($i = 0; $i < DEFAULT_ROW_ELEMENT_COUNT; $i++)
-                $this->result_content .= "\t\t<td></td>\n";
-            $this->result_content .= "\t</tr>";
-            return;
-        }
+            return $this->generate_result_unknown($original_digest, $original_path);
 
         // Determine actual length of result rows
         $row_length = count($result->fetch_row());
@@ -65,10 +84,10 @@ class ContentGenerator
             $row = $result->fetch_row();
             $status = ($original_path == $row[0]) ? 'valid' : 'warning';
             $status = ($original_digest != $row[1]) ? 'suspicious' : $status;
+            $counts[$status]++;
 
-            $this->result_content .=    "\t<tr class=\"$status\">\n
-                                            \t\t<td>$original_path</td>\n
-                                            \t\t<td>$original_digest</td>\n";
+            $this->result_content .=  
+                "\t<tr class=\"$status\">\n\t\t<td>$original_path</td>\n\t\t<td>$original_digest</td>\n";
 
             for ($j = 0; $j < $row_length; $j++)
                 $this->result_content .= "\t\t<td>" . $row[$j] . "</td>\n";
@@ -78,49 +97,50 @@ class ContentGenerator
 
     function generate_server_error() 
     {
-        $this->result_content .= file_get_contents(BASE_PATH_PREFIX . 'frontend/server_error.html');
-        $this->isSuccess = False;
+        $this->result_content .= "<p class=\"alert\">It's not you, it's us. System error occurred on server side.</p>";
+        $this->is_success = False;
     }
 
-    private function generate_body() { require(BASE_PATH_PREFIX . 'frontend/body.html'); } 
-
-    private function generate_footer() { include(BASE_PATH_PREFIX . 'frontend/footer.html'); }
-
-    private function generate_header() { include(BASE_PATH_PREFIX . 'frontend/header.html'); }
-
-    private function generate_result() 
+    private function generate_result()
     {
         if ($this->result_content == '')
             return;
-
-        if (!$this->isSuccess)
-            echo $this->result_content;
+        if ($this->is_success)
+            $this->generate_success_result();
         else
-            echo    "<table>\n
-                        \t<thead>\n
-                            \t\t<tr>\n
-                                \t\t\t<th>Original path</th>\n
-                                \t\t\t<th>Original digest</th>\n
-                                \t\t\t<th>File path</th>\n
-                                \t\t\t<th>File digest</th>\n
-                                \t\t\t<th>Created</th>\n
-                                \t\t\t<th>Modified</th>\n
-                                \t\t\t<th>Registered</th>\n
-                                \t\t\t<th>File type</th>\n
-                                \t\t\t<th>Company name</th>\n
-                                \t\t\t<th>Product name</th>\n
-                                \t\t\t<th>Original path</th>\n
-                                \t\t\t<th>Product version</th>\n
-                                \t\t\t<th>File version</th>\n
-                                \t\t\t<th>File description</th>\n
-                                \t\t\t<th>OS version</th>\n
-                            \t\t</tr>\n
-                        \t</thead>\n
-                        $this->result_content
-                        </table>\n";
+            echo $this->result_content;
     }
 
-    private $isSuccess;
+    private function generate_success_result() 
+    {
+        echo "<p class=\"info\">All files have been checked successfully. " . $this->counts['valid'] . " valid files, "
+            . $this->counts['suspicious'] . " suspisions, " . $this->counts['warning'] . " warnings and " . $this->counts['error'] ." errors were found.</p>";
+
+        include(BASE_PATH_PREFIX . 'frontend/filters.html');
+
+        echo "<div id=\"data\">\n<div class=\"overflow_content\">\n<table>\n";
+
+        echo $this->table_head . $this->result_content;
+
+        echo "</table>\n</div>\n</div>\n\n";
+    }
+
+    private function generate_result_unknown(&$digest, &$path_name)
+    {
+        $this->result_content .=    
+                "\t<tr class=\"unknown\">\n\t\t<td>$path_name</td>\n\t\t<td>$digest</td>\n";
+
+        for ($i = 0; $i < DEFAULT_ROW_ELEMENT_COUNT; $i++)
+            $this->result_content .= "\t\t<td>Unknown</td>\n";
+        $this->result_content .= "\t</tr>";
+    }
+
+    private $counts;
+    private $is_success;
     private $result_content;
+
+    private $table_head = "<thead>\n\n<tr>\n<th>Original path</th>\n<th>Original digest</th>\n<th>File path</th>\n<th>File digest</th>\n<th>Created</th>\n
+        <th>Modified</th>\n<th>Registered</th>\n<th>File type</th>\n<th>Company name</th>\n<th>Product name</th>\n<th>Product version</th>\n
+        <th>File version</th>\n<th>File description</th>\n<th>OS version</th>\n</tr>\n</thead>";
 }
 ?>

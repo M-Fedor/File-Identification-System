@@ -1,6 +1,5 @@
 <?php
 define('BASE_PATH_PREFIX', '../');
-define('FILE_ROW_ELEMENT_COUNT', 15);
 require('ContentGenerator.php');
 require('DBConnection.php');
 
@@ -70,11 +69,7 @@ function process_result_file()
 
     $result = [];
     while ($line = fgetcsv($fd, 0))
-    {
-        if (count($line) != FILE_ROW_ELEMENT_COUNT)
-            return $gen->generate_bad_request();
         array_push($result, $line);
-    }
 
     fclose($fd);
     $gen->generate_result_file($result);
@@ -86,8 +81,6 @@ else if (!empty($_FILES['hash_file']['tmp_name']))
     process_hash_file();
 else if (!empty($_FILES['result_file']['tmp_name']))
     process_result_file();
-else
-    $gen->generate_bad_request();
 
 $gen->generate_content();
 ?>
