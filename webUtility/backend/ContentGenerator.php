@@ -47,11 +47,12 @@ class ContentGenerator
         for($i = 0; $i < $rows_count; $i++)
         {
             $row_length = count($result[$i]);
+            $file_name = $this->get_file_name($result[$i][1]);
 
             if ($row_length == FILE_ROW_ELEMENT_COUNT)
             {
                 $status = $result[$i][0];
-                $this->result_content .= "\t<tr class=\"$status\">\n";
+                $this->result_content .= "\t<tr class=\"$status\">\n<td>$file_name</td>\n";
 
                 for ($j = 1; $j < $row_length; $j++)
                     $this->result_content .= "\t\t<td>" . $result[$i][$j] . "</td>\n";
@@ -60,8 +61,8 @@ class ContentGenerator
             else
             {
                 $status = 'error';
-                $this->result_content .= "\t<tr class=\"$status\">\n<td>File name</td>\n
-                <td colspan=14>Found result has incorrect format. Either filename contains \",\" or you're just trying us.</td>\n";
+                $this->result_content .= "\t<tr class=\"$status\">\n<td>$file_name</td>\n
+                    <td colspan=14>Found result has incorrect format. Either filename contains \",\" or you're just trying us.</td>\n";
             }
 
             $this->counts[$status]++;
@@ -71,9 +72,10 @@ class ContentGenerator
     function generate_result_mysql(&$original_digest, &$original_path, &$result)
     {
         $rows_count = $result->num_rows;
+        $file_name = $this->get_file_name($original_path);
 
         if ($rows_count == 0)
-            return $this->generate_result_unknown($original_digest, $original_path);
+            return $this->generate_result_unknown($file_name, $original_digest, $original_path);
 
         // Determine actual length of result rows
         $row_length = count($result->fetch_row());
@@ -87,7 +89,7 @@ class ContentGenerator
             $counts[$status]++;
 
             $this->result_content .=  
-                "\t<tr class=\"$status\">\n\t\t<td>$original_path</td>\n\t\t<td>$original_digest</td>\n";
+                "\t<tr class=\"$status\">\n\t\t<td>$file_name</td><td>$original_path</td>\n\t\t<td>$original_digest</td>\n";
 
             for ($j = 0; $j < $row_length; $j++)
                 $this->result_content .= "\t\t<td>" . $row[$j] . "</td>\n";
@@ -113,8 +115,8 @@ class ContentGenerator
 
     private function generate_success_result() 
     {
-        echo "<p class=\"info\">All files have been checked successfully. " . $this->counts['valid'] . " valid files, "
-            . $this->counts['suspicious'] . " suspisions, " . $this->counts['warning'] . " warnings and " . $this->counts['error'] ." errors were found.</p>";
+        echo "<p class=\"info\">All files have been checked successfully. " . $this->counts['valid'] . " valid files, " . $this->counts['suspicious'] . 
+            " suspisions, " . $this->counts['warning'] . " warnings and " . $this->counts['error'] ." errors were found.</p>";
 
         include(BASE_PATH_PREFIX . 'frontend/filters.html');
 
@@ -125,22 +127,33 @@ class ContentGenerator
         echo "</table>\n</div>\n</div>\n\n";
     }
 
-    private function generate_result_unknown(&$digest, &$path_name)
+    private function generate_result_unknown(&$file_name, &$digest, &$path_name)
     {
         $this->result_content .=    
-                "\t<tr class=\"unknown\">\n\t\t<td>$path_name</td>\n\t\t<td>$digest</td>\n";
+                "\t<tr class=\"unknown\">\n\t\t<td>$file_name</td><td>$path_name</td>\n\t\t<td>$digest</td>\n";
 
         for ($i = 0; $i < DEFAULT_ROW_ELEMENT_COUNT; $i++)
             $this->result_content .= "\t\t<td>Unknown</td>\n";
         $this->result_content .= "\t</tr>";
     }
 
+    private function get_file_name(&$file_path)
+    {
+        if ($file_path == NULL)
+            return '';
+
+        $pos = max(strrpos($file_path, '/'), strrpos($file_path, '\\'));
+        if ($pos === False)
+            return $file_path;
+        return substr($file_path, $pos + 1);
+    }
+
     private $counts;
     private $is_success;
     private $result_content;
 
-    private $table_head = "<thead>\n\n<tr>\n<th>Original path</th>\n<th>Original digest</th>\n<th>File path</th>\n<th>File digest</th>\n<th>Created</th>\n
-        <th>Modified</th>\n<th>Registered</th>\n<th>File type</th>\n<th>Company name</th>\n<th>Product name</th>\n<th>Product version</th>\n
-        <th>File version</th>\n<th>File description</th>\n<th>OS version</th>\n</tr>\n</thead>";
+    private $table_head = "<thead>\n\n<tr>\n<th>File name</th>\n<th>Original path</th>\n<th>Original digest</th>\n<th>File path</th>\n
+        <th>File digest</th>\n<th>Created</th>\n<th>Modified</th>\n<th>Registered</th>\n<th>File type</th>\n<th>Company name</th>\n
+        <th>Product name</th>\n<th>Product version</th>\n<th>File version</th>\n<th>File description</th>\n<th>OS version</th>\n</tr>\n</thead>";
 }
 ?>
