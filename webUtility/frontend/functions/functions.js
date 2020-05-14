@@ -5,7 +5,8 @@ function addElement ()
     var wrapperWidth = parseInt(window.getComputedStyle(document.querySelector('#data')).getPropertyValue('width'));
     var tableWidth = parseInt(window.getComputedStyle(document.querySelector('#data table')).getPropertyValue('width'));
     
-    if (tableWidth > wrapperWidth) {
+    if (tableWidth > wrapperWidth) 
+    {
         var div = document.createElement('div');
         div.className = 'overflow_indicator';
         document.getElementById('data').insertBefore(div, document.querySelector('.overflow_content'));
@@ -23,7 +24,8 @@ function filter (obj, filterclass)
 			
     var e = document.querySelectorAll('table tbody tr');
     
-    for (var i = 0; i < e.length; i++) {
+    for (var i = 0; i < e.length; i++) 
+    {
 			if (e[i].classList.contains(filterclass))
 				e[i].classList.toggle('show');
     }
