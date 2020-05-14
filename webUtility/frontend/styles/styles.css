@@ -1,0 +1,72 @@
+body {line-height: 1.5; margin: 0; font-weight: 300; color: #333;}
+h1, h2 {text-transform: uppercase; letter-spacing: 1px; font-weight: 300; margin: 0; font-size: 4em;}
+h2 {font-size: 2em; font-weight: bold; text-align: left;}
+
+body, button, input {font-family: 'Open Sans', sans-serif; font-size: 1em;}
+svg {vertical-align: middle;}
+
+button, #result span {transition: .3s;}
+input {width: 100%; box-sizing: border-box; line-height: 1em; padding: 8px 14px; border: 1px solid #CCC; color: #333;}
+
+button, .button, .button.active:hover {background: none; border: 1px solid; color: #e2b529; text-transform: uppercase; font-weight: 400; padding: 8px 14px; line-height: 1; cursor: pointer;}
+button:hover, .button:hover, .button.active {background: #e2b529; color: #fff;}
+
+.cleaner {clear: both;}
+
+#wrapper_out {overflow: hidden;}
+#wrapper {width: 1400px; margin: auto;}
+
+#header {margin: 0 -1000px; padding: 200px 1150px 150px; text-align: center; background: #e2b529; color: #fff;}
+#header p {font-size: 1.2em;}
+
+#content {margin: 100px 0; overflow: hidden;}
+#content form {float: left; width: 30%; padding: 0 80px; box-sizing: border-box;}
+#content form + form {margin-left: 5%;}
+#content label.file input {position: fixed; left: -100%; top: -100%;}
+#content label.file div {padding: 40px; text-align: center; cursor: pointer;}
+#content label.file div svg {width: 80px; height: 80px;}
+#content form input {margin-bottom: 15px;}
+#content form button {display: block; width: 100%; text-align: center;}
+
+#result {margin-top: 100px;}
+#result .info, #result .alert {padding: 12px; color: #fff;}
+#result .info {background: #e2b529;}
+#result .alert {background: #d9534f;}
+
+#result .button {float: left; margin-right: 4px;}
+#filter {float: left; overflow: hidden;}
+
+.button.control, .button.control:hover {background: #fff; color: #0275d8;}
+.button.control:hover, .button.control.active {background: #0275d8; border-color: #0275d8; color: #fff;}
+#filter .suspicious, #filter .suspicious.active:hover {background: #fff; color: #d9534f;}
+#filter .suspicious:hover, #filter .suspicious.active {background: #d9534f; border-color: #d9534f; color: #fff;}
+#filter .warning, #filter .warning.active:hover {background: #fff; color: #f0ad4e;}
+#filter .warning:hover, #filter .warning.active {background: #f0ad4e; border-color: #f0ad4e; color: #fff;}
+#filter .error, #filter .error.active:hover {background: #fff; color: #d9534f;}
+#filter .error:hover, #filter .error.active {background: #d9534f; border-color: #d9534f; color: #fff;}
+#filter .valid, #filter .valid.active:hover {background: #fff; color: #5cb85c;}
+#filter .valid:hover, #filter .valid.active {background: #5cb85c; border-color: #5cb85c; color: #fff;}
+#filter .unknown, #filter .unknown.active:hover {background: #fff; color: #333;}
+#filter .unknown:hover, #filter .unknown.active {background: #333; border-color: #333; color: #fff;}
+
+#data {position: relative; margin-top: 20px;}
+
+#data .overflow_indicator, .overflow_indicator:after {position: absolute; right: 0; top: 0; bottom: 0; width: 50px; overflow-x: scroll; visibility: hidden; z-index: 2;}
+#data .overflow_indicator:after {content: ''; overflow-x: visible; visibility: visible; background: url('../assets/gradient.png') repeat-y;}
+#data .overflow_content {overflow-x: auto;}
+#data .overflow_indicator + .overflow_content table:after {content: ''; position: absolute; left: 100%; width: 50px; top: 0; bottom: 0;}
+
+#data table {border-collapse: collapse; table-layout: fixed; width: 100%; position: relative;}
+#data th, td {min-width: 200px; width: 200px; white-space: nowrap; padding: 10px; text-align: left; overflow: hidden; text-overflow: ellipsis;}
+#data td {border-bottom: 1px solid #ccc;}
+#data tr.suspicious {background: rgba(217, 83, 79, 0.4);}
+#data tr.warning {background: rgba(240, 173, 78, 0.4);}
+#data tr.error {background: rgba(217, 83, 79, 0.4);}
+#data tr.valid {background: rgba(92, 184, 92, 0.4);}
+#data table.full {table-layout: auto;}
+#data table.full th, table.full td {width: auto;}
+
+#data.filter_applied tbody tr {display: none;}
+#data.filter_applied tbody tr.show {display: table-row;}
+
+#svg {display: none;}

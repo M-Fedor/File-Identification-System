@@ -6,11 +6,13 @@ ifeq ($(OS), Windows_NT)
 	MYSQL_LIB_DIR=C:/Program\ Files/MariaDB/MariaDB\ Connector\ C\ 64-bit/lib
 	PLATFORM=Win
 	TARGET=File-Identification-System.exe
+	WEB_INST_DIR=
 endif
 ifeq ($(shell uname), Linux)
 	INSTDIR=build
 	PLATFORM=Unix
 	TARGET=File-Identification-System
+	WEB_INST_DIR=/var/www/html/
 endif
 
 default: $(TARGET)
@@ -33,10 +35,13 @@ File-Identification-System.exe: src/FileIdentificationSystem.cpp src/Input.cpp s
 	gcc -o $@ $? -I $(CRYPTOPP_INCLUDE_DIR) -I $(MYSQL_INCLUDE_DIR) -L $(CRYPTOPP_LIB_DIR) -lcryptopp -L $(MYSQL_LIB_DIR)\
     -llibmariadb -lpthread -lstdc++ -std=c++11 -lversion -pedantic -Wall -Wextra
 
-.PHONY: clean install
+.PHONY: clean install install-web
 
 clean: clean-$(PLATFORM)
 install: install-$(PLATFORM)
+
+clean-Unix:
+	-rm $(TARGET)
 
 clean-Win: 
 	-rm $(TARGET)
@@ -45,8 +50,12 @@ clean-Win:
 	-rm SysUpdateImp.obj
 	-rm Utils.obj
 
-clean-Unix:
-	-rm $(TARGET)
+install-Unix:
+	mkdir -p $(INSTDIR)/.
+	-mv $(TARGET) $(INSTDIR)/.
+
+install-web:
+	cp -r webUtility/. $(WEB_INST_DIR)
 
 install-Win:
 	mkdir -p $(INSTDIR)/.
@@ -57,6 +66,3 @@ install-Win:
 	-mv Utils.obj $(INSTDIR)/.
 	-cp conf/$(TARGET).manifest $(INSTDIR)/.
 
-install-Unix:
-	mkdir -p $(INSTDIR)/.
-	-mv $(TARGET) $(INSTDIR)/.
