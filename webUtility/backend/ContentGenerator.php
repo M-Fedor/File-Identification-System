@@ -26,11 +26,11 @@ class ContentGenerator
 
         include(BASE_PATH_PREFIX . 'frontend/header.html');
 
-        echo "<div id=\"content\">";
+        echo "<div id=\"content\">\n";
 
         require(BASE_PATH_PREFIX . 'frontend/basic_content.html');
 
-        echo "<div id=\"result\">";
+        echo "<div id=\"result\">\n";
 
         $this->generate_result();
 
@@ -52,7 +52,7 @@ class ContentGenerator
             if ($row_length == FILE_ROW_ELEMENT_COUNT)
             {
                 $status = $result[$i][0];
-                $this->result_content .= "\t<tr class=\"$status\">\n<td>$file_name</td>\n";
+                $this->result_content .= "\n\t<tr class=\"$status\">\n\t\t<td>$file_name</td>\n";
 
                 for ($j = 1; $j < $row_length; $j++)
                     $this->result_content .= "\t\t<td>" . $result[$i][$j] . "</td>\n";
@@ -61,8 +61,8 @@ class ContentGenerator
             else
             {
                 $status = 'error';
-                $this->result_content .= "\t<tr class=\"$status\">\n<td>$file_name</td>\n
-                    <td colspan=14>Found result has incorrect format. Either filename contains \",\" or you're just trying us.</td>\n";
+                $this->result_content .= "\n\t<tr class=\"$status\">\n\t\t<td>$file_name</td>\n
+                    \t\t<td colspan=14>Found result has incorrect format. Either filename contains \",\" or you're just trying us.</td>\n";
             }
 
             $this->counts[$status]++;
@@ -89,7 +89,7 @@ class ContentGenerator
             $counts[$status]++;
 
             $this->result_content .=  
-                "\t<tr class=\"$status\">\n\t\t<td>$file_name</td><td>$original_path</td>\n\t\t<td>$original_digest</td>\n";
+                "\n\t<tr class=\"$status\">\n\t\t<td>$file_name</td>\n\t\t<td>$original_path</td>\n\t\t<td>$original_digest</td>\n";
 
             for ($j = 0; $j < $row_length; $j++)
                 $this->result_content .= "\t\t<td>" . $row[$j] . "</td>\n";
@@ -117,7 +117,7 @@ class ContentGenerator
     {
         echo "<p class=\"info\">All files have been checked successfully. " . $this->counts['valid'] . " valid files, "
             . $this->counts['suspicious'] . " suspisions, " . $this->counts['warning'] . " warnings, "
-            . $this->counts['error'] ." errors and " . $this->counts['unknown'] . " unknown files were found.</p>";
+            . $this->counts['error'] ." errors and " . $this->counts['unknown'] . " unknown files were found.</p>\n";
 
         include(BASE_PATH_PREFIX . 'frontend/filters.html');
 

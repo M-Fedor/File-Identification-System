@@ -1,6 +1,6 @@
 body {line-height: 1.5; margin: 0; font-weight: 300; color: #333;}
 h1, h2 {text-transform: uppercase; letter-spacing: 1px; font-weight: 300; margin: 0; font-size: 4em;}
-h2 {font-size: 2em; font-weight: bold; text-align: center;}
+h2 {font-size: 2em; font-weight: bold; text-align: left;}
 
 body, button, input {font-family: 'Open Sans', sans-serif; font-size: 1em;}
 svg {vertical-align: middle;}
@@ -16,7 +16,7 @@ button:hover, .button:hover, .button.active {background: #e2b529; color: #fff;}
 #wrapper_out {overflow: hidden;}
 #wrapper {width: 1400px; margin: auto;}
 
-#header {margin: 0 -1000px; padding: 200px 1200px 150px; text-align: center; background: #e2b529; color: #fff;}
+#header {margin: 0 -1000px; padding: 200px 1150px 150px; text-align: center; background: #e2b529; color: #fff;}
 #header p {font-size: 1.2em;}
 
 #content {margin: 100px 0; overflow: hidden;}
