@@ -46,6 +46,8 @@ button:hover, .button:hover, .button.active {background: #e2b529; color: #fff;}
 #filter .error:hover, #filter .error.active {background: #d9534f; border-color: #d9534f; color: #fff;}
 #filter .valid, #filter .valid.active:hover {background: #fff; color: #5cb85c;}
 #filter .valid:hover, #filter .valid.active {background: #5cb85c; border-color: #5cb85c; color: #fff;}
+#filter .unknown, #filter .unknown.active:hover {background: #fff; color: #333;}
+#filter .unknown:hover, #filter .unknown.active {background: #333; border-color: #333; color: #fff;}
 
 #data {position: relative; margin-top: 20px;}
 

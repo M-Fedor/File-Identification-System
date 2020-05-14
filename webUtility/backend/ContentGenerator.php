@@ -6,7 +6,7 @@ class ContentGenerator
 {
     function __construct() 
     { 
-        $this->counts['error'] = $this->counts['suspicious'] = 
+        $this->counts['error'] = $this->counts['suspicious'] = $this->counts['unknown'] =
             $this->counts['valid'] = $this->counts['warning'] = 0;
         $this->is_success = True;
         $this->result_content = ''; 
@@ -115,8 +115,9 @@ class ContentGenerator
 
     private function generate_success_result() 
     {
-        echo "<p class=\"info\">All files have been checked successfully. " . $this->counts['valid'] . " valid files, " . $this->counts['suspicious'] . 
-            " suspisions, " . $this->counts['warning'] . " warnings and " . $this->counts['error'] ." errors were found.</p>";
+        echo "<p class=\"info\">All files have been checked successfully. " . $this->counts['valid'] . " valid files, "
+            . $this->counts['suspicious'] . " suspisions, " . $this->counts['warning'] . " warnings, "
+            . $this->counts['error'] ." errors and " . $this->counts['unknown'] . " unknown files were found.</p>";
 
         include(BASE_PATH_PREFIX . 'frontend/filters.html');
 
@@ -135,6 +136,7 @@ class ContentGenerator
         for ($i = 0; $i < DEFAULT_ROW_ELEMENT_COUNT; $i++)
             $this->result_content .= "\t\t<td>Unknown</td>\n";
         $this->result_content .= "\t</tr>";
+        $this->counts['unknown']++;
     }
 
     private function get_file_name(&$file_path)
