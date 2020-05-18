@@ -132,6 +132,7 @@ int DBConnection::init(const char *query)
     mysql = mysql_init(NULL);
     if (!mysql_real_connect(mysql, hostName, userName, userPasswd, dbName, portNum, unixSocket, 0))
         return printErr("Open MySQL connection");
+    mysql_set_character_set(mysql, "utf8");
 
     stmt = mysql_stmt_init(mysql);
     if (mysql_stmt_prepare(stmt, query, std::strlen(query)))
