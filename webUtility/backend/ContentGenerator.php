@@ -86,7 +86,7 @@ class ContentGenerator
             $row = $result->fetch_row();
             $status = ($original_path == $row[0]) ? 'valid' : 'warning';
             $status = ($original_digest != $row[1]) ? 'suspicious' : $status;
-            $counts[$status]++;
+            $this->counts[$status]++;
 
             $this->result_content .=  
                 "\n\t<tr class=\"$status\">\n\t\t<td>$file_name</td>\n\t\t<td>$original_path</td>\n\t\t<td>$original_digest</td>\n";

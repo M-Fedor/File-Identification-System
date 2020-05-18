@@ -58,6 +58,7 @@ class DBConnection
             echo "Failed to connect to MySQL: (" . $this->connection->connect_errno . ") " . $this->connection->connect_error;
             return FAIL;
         }    
+        $this->connection->set_charset('UTF8');
 
         $this->stmt = $this->connection->prepare('(SELECT * FROM recognize_file WHERE file_digest = ?) UNION
                                                   (SELECT * FROM recognize_file WHERE absolute_path = ? AND file_digest != ?)');
