@@ -8,7 +8,7 @@ $gen = new ContentGenerator();
 function process_file() 
 {
     GLOBAL $gen;
-    $conn = new DBConnection('localhost', 'root', 'HondaCivic10', 'test');
+    $conn = new DBConnection('localhost', 'user_name', 'password', 'test');
     if (!$conn->init()) 
         return $gen->generate_server_error();
 
@@ -33,7 +33,7 @@ function process_file()
 function process_hash_file()
 {
     GLOBAL $gen;
-    $conn = new DBConnection('localhost', 'root', 'HondaCivic10', 'test');
+    $conn = new DBConnection('localhost', 'user_name', 'password', 'test');
     if (!$conn->init())
         return $gen->generate_server_error();
 
