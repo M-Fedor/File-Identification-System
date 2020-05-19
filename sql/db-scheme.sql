@@ -1,16 +1,10 @@
-DROP TABLE IF EXISTS os_combination;
-DROP TABLE IF EXISTS os;
-DROP TABLE IF EXISTS file_info;
-DROP TABLE IF EXISTS file_description;
-DROP TABLE IF EXISTS file_version;
-DROP TABLE IF EXISTS product;
-DROP TABLE IF EXISTS product_version;
-DROP TABLE IF EXISTS product_name;
-DROP TABLE IF EXISTS company;
-DROP TABLE IF EXISTS file_type;
-DROP VIEW IF EXISTS recognize_file;
-DROP VIEW IF EXISTS list_product;
-DROP FUNCTION IF EXISTS insert_metadata;
+DROP DATABASE IF EXISTS test;
+
+CREATE DATABASE test 
+    CHARACTER SET = 'utf8' 
+    COLLATE = 'utf8_general_ci';
+
+USE test;
 
 CREATE TABLE file_type (
     type_id INT PRIMARY KEY AUTO_INCREMENT,

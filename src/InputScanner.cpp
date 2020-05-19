@@ -102,7 +102,12 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
         if (fDescriptor.fail())
             return printFailed(static_cast<std::ostringstream &>(
                 std::ostringstream() << "Open file " << path.data()));
+#if defined(__linux__)
         pathName = std::move(path);
+#elif defined(_WIN32)
+        // No other suitable way for ANSI-CP to UTF8 conversion supported by WINAPI these days
+        pathName = std::move(UTF16ToUTF8(MultiByteToUTF16(path)));
+#endif
         hasAlternateStreamFile(pathName);
         return OK;
     }

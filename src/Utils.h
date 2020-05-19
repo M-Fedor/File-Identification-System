@@ -39,7 +39,7 @@ void resetCursor();
 #if defined(_WIN32)
 void printColorized(const char *str, int color);
 std::wstring MultiByteToUTF16(std::string &inStr);
-std::string UTF16ToUTF8(std::wstring &inStr);
+std::string UTF16ToUTF8(std::wstring inStr);
 #endif
 
 #endif
