@@ -47,7 +47,7 @@ int InputScanner::enumerateNextAlternateStream(std::ifstream &fDescriptor, std::
 #elif defined(_WIN32)
     std::wstring pathStreamNameW(currentPathNameW);
     pathStreamNameW.append(streamData.cStreamName);
-    pathName = UTF16ToUTF8(pathStreamNameW);
+    pathName = std::move(UTF16ToMultiByte(pathStreamNameW, CP_THREAD_ACP));
     hasNextAlternateStream = getNextAlternateStream(pathName);
 #endif
 
@@ -55,6 +55,11 @@ int InputScanner::enumerateNextAlternateStream(std::ifstream &fDescriptor, std::
     if (fDescriptor.fail())
         return printFailed(static_cast<std::ostringstream &>(
             std::ostringstream() << "Open file " << pathName.data()));
+
+#if defined(_WIN32)
+    // No other suitable way for ANSI-CP to UTF8 conversion supported by WINAPI these days
+    pathName = std::move(UTF16ToMultiByte(MultiByteToUTF16(pathName, CP_THREAD_ACP), CP_UTF8));
+#endif
     return OK;
 }
 
@@ -102,13 +107,14 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
         if (fDescriptor.fail())
             return printFailed(static_cast<std::ostringstream &>(
                 std::ostringstream() << "Open file " << path.data()));
+
+        hasAlternateStreamFile(path);
 #if defined(__linux__)
         pathName = std::move(path);
 #elif defined(_WIN32)
         // No other suitable way for ANSI-CP to UTF8 conversion supported by WINAPI these days
-        pathName = std::move(UTF16ToUTF8(MultiByteToUTF16(path)));
+        pathName = std::move(UTF16ToMultiByte(MultiByteToUTF16(path, CP_THREAD_ACP), CP_UTF8));
 #endif
-        hasAlternateStreamFile(pathName);
         return OK;
     }
 }
@@ -157,7 +163,7 @@ bool InputScanner::hasAlternateStreamDir(std::string &pathName)
 #if defined(__linux__)
     return hasAlternateStreamFile(pathName);
 #elif defined(_WIN32)
-    currentPathNameW = MultiByteToUTF16(pathName);
+    currentPathNameW = std::move(MultiByteToUTF16(pathName, CP_THREAD_ACP));
     hasNextAlternateStream = getFirstAlternateStream(pathName);
     return hasNextAlternateStream;
 #endif
@@ -191,7 +197,7 @@ bool InputScanner::hasAlternateStreamFile(std::string &pathName)
     attr.get()[attrSize] = 0;
     return true;
 #elif defined(_WIN32)
-    currentPathNameW = MultiByteToUTF16(pathName);
+    currentPathNameW = std::move(MultiByteToUTF16(pathName, CP_THREAD_ACP));
     if (getFirstAlternateStream(pathName))
         hasNextAlternateStream = getNextAlternateStream(pathName);
     return hasNextAlternateStream;

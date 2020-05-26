@@ -40,7 +40,7 @@ private:
     int getType();
     int getVariableVersion();
     int insertData(std::string &digest, std::string &name);
-    int printErr(int errNum, const char *errInfo);
+    int printErr(int errNum, const std::ostringstream &errInfo);
 
     DBConnection connection;
     LPSTR verStr;
@@ -48,7 +48,7 @@ private:
     std::string fileType;
     std::string fileVerHelperStr;
     std::string productVerHelperStr;
-    std::unique_ptr<char[]> defaultStr;
+    std::shared_ptr<char[]> defaultStr;
     std::unique_ptr<char[]> osVerStr;
     std::unique_ptr<char[]> verInfo;
     std::vector<LPCSTR> versionAttributes;
