@@ -150,6 +150,12 @@ int DBConnection::printErr(const char *errInfo)
     return FAIL;
 }
 
+/* Rewinds to the beginning of stored result set */
+void DBConnection::rewindData()
+{
+    mysql_stmt_data_seek(stmt, 0);
+}
+
 /* Fill in parameters of bind structure used for definition of statement variables substitution
 or definition of query result set storage and indicators */
 void DBConnection::setBind(

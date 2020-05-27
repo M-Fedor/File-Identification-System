@@ -18,15 +18,55 @@ OutputValidateDB::OutputValidateDB(DBConnection &conn, std::shared_ptr<OutputOff
 /* Destructor */
 OutputValidateDB::~OutputValidateDB() {}
 
-/* Determine nature of examined file */
-void OutputValidateDB::evaluateData(std::string &digest, std::string &name, std::stringstream &str)
+/* Naive implementation determines, wether exact match for file identifiers exists in result set */
+void OutputValidateDB::containsExactMatch(std::string &digest, std::string &name)
 {
-    const char *status;
+    hasExactMatch = false;
+    int rc = connection.fetchData();
+    while(!rc)
+    {
+        hasExactMatch = (evaluateData(digest, name) == VALID);
+        if (hasExactMatch)
+            break;
+        rc = connection.fetchData();
+    }
 
-    status = (!std::strcmp(fileName.get(), name.data())) ? "valid," : "warning,";
-    status = (std::strcmp(fileDigest.get(), digest.data())) ? "suspicious," : status;
+    connection.rewindData();
+}
 
-    str << status;
+/* Determine nature of examined file */
+int OutputValidateDB::evaluateData(std::string &digest, std::string &name)
+{
+    int status;
+
+    status = (!std::strcmp(fileName.get(), name.data())) ? VALID : WARNING;
+    if (status == VALID)
+        status = (std::strcmp(fileDigest.get(), digest.data())) ? SUSPICIOUS : status;
+
+    return status;
+}
+
+/* Evaulate a string value based on nature of the file */
+const char *OutputValidateDB::evaluateStatus(int status)
+{
+    const char *statusStr;
+
+    switch (status) 
+    {
+        case VALID:
+            statusStr = "valid,";
+            break;
+        case WARNING:
+            statusStr = "warning,";
+            break;
+        case SUSPICIOUS:
+            statusStr = "suspicious,";
+            break;
+        default:
+            statusStr = "unknown,";
+    }
+
+    return statusStr;
 }
 
 /* Format data obtained from database into convenient form */
@@ -38,6 +78,8 @@ int OutputValidateDB::formatData(std::string &digest, std::string &name, std::st
 
     bool resultNotFound = true;
     std::stringstream outputStr;
+
+    containsExactMatch(digest, name);
 
     int rc = connection.fetchData();
     resultNotFound = !rc ? false : true;
@@ -65,7 +107,6 @@ int OutputValidateDB::formatData(std::string &digest, std::string &name, std::st
     }
 
     data = std::move(outputStr.str());
-
     return OK;
 }
 
@@ -99,8 +140,11 @@ int OutputValidateDB::init()
 void OutputValidateDB::makePartialOut(
     std::string &digest, std::string &name, std::stringstream &str)
 {
-    evaluateData(digest, name, str);
-    str << name << "," << digest << "," << fileName.get() << "," << fileDigest.get();
+    int status = evaluateData(digest, name);
+    if (status == WARNING && hasExactMatch)
+        return;
+
+    str << evaluateStatus(status) << name << "," << digest << "," << fileName.get() << "," << fileDigest.get();
 
     for (auto &time : timestamps)
         str << "," << time.day << "." << time.month << "." << time.year << " "
