@@ -29,10 +29,11 @@ public:
 private:
   void containsExactMatch(std::string &digest, std::string &name);
   int evaluateData(std::string &digest, std::string &name);
-  const char *evaluateStatus(int status);
+  const char *enumerateStatus(int status);
   int formatData(std::string &digest, std::string &name, std::string &data);
   int getData(std::string &digest, std::string &name);
-  void makePartialOut(std::string &digest, std::string &name, std::stringstream &str);
+  void makePartialOutput(std::string &digest, std::string &name, std::stringstream &str);
+  void makeUnknownOutput(std::string &digest, std::string &name, std::stringstream &str);
   void resizeBuffers();
 
   bool hasExactMatch;
