@@ -68,7 +68,7 @@ function process_result_file()
         return $gen->generate_server_error();
 
     $result = [];
-    while ($line = fgetcsv($fd, 0))
+    while ($line = fgetcsv($fd, 0, ';'))
         array_push($result, $line);
 
     fclose($fd);

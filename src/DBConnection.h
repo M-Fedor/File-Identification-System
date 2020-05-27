@@ -39,6 +39,7 @@ public:
     int executeSelect(char *digest, char *name);
     int fetchData();
     int init(const char *query);
+    void rewindData();
     void setSize(int nameSize, int digestSize, int versionSize);
 
 private:

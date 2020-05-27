@@ -18,15 +18,48 @@ OutputValidateDB::OutputValidateDB(DBConnection &conn, std::shared_ptr<OutputOff
 /* Destructor */
 OutputValidateDB::~OutputValidateDB() {}
 
-/* Determine nature of examined file */
-void OutputValidateDB::evaluateData(std::string &digest, std::string &name, std::stringstream &str)
+/* Naive implementation determines, wether exact match for file identifiers exists in result set */
+void OutputValidateDB::containsExactMatch(std::string &digest, std::string &name)
 {
-    const char *status;
+    hasExactMatch = false;
+    int rc = connection.fetchData();
+    while(!rc)
+    {
+        hasExactMatch = (evaluateData(digest, name) == VALID);
+        if (hasExactMatch)
+            break;
+        rc = connection.fetchData();
+    }
 
-    status = (!std::strcmp(fileName.get(), name.data())) ? "valid," : "warning,";
-    status = (std::strcmp(fileDigest.get(), digest.data())) ? "suspicious," : status;
+    connection.rewindData();
+}
 
-    str << status;
+/* Determine nature of examined file */
+int OutputValidateDB::evaluateData(std::string &digest, std::string &name)
+{
+    int status;
+
+    status = (!std::strcmp(fileName.get(), name.data())) ? VALID : WARNING;
+    if (status == VALID)
+        status = (std::strcmp(fileDigest.get(), digest.data())) ? SUSPICIOUS : status;
+
+    return status;
+}
+
+/* Translate file-nature code into comprehensible string value */
+const char *OutputValidateDB::enumerateStatus(int status)
+{
+    switch (status) 
+    {
+        case VALID:
+            return "valid;";
+        case WARNING:
+            return "warning;";
+        case SUSPICIOUS:
+            return "suspicious;";
+        default:
+            return "unknown;";
+    }
 }
 
 /* Format data obtained from database into convenient form */
@@ -39,11 +72,13 @@ int OutputValidateDB::formatData(std::string &digest, std::string &name, std::st
     bool resultNotFound = true;
     std::stringstream outputStr;
 
+    containsExactMatch(digest, name);
+
     int rc = connection.fetchData();
     resultNotFound = !rc ? false : true;
     while (!rc)
     {
-        makePartialOut(digest, name, outputStr);
+        makePartialOutput(digest, name, outputStr);
         rc = connection.fetchData();
     }
 
@@ -57,15 +92,9 @@ int OutputValidateDB::formatData(std::string &digest, std::string &name, std::st
     }
 
     if (resultNotFound)
-    {
-        outputStr << "unknown," << name << "," << digest;
-        for(int i = 0; i < MAX_ATTR_COUNT; i++)
-            outputStr << ",";
-        outputStr << "\n";
-    }
+        makeUnknownOutput(digest, name, outputStr);
 
     data = std::move(outputStr.str());
-
     return OK;
 }
 
@@ -95,21 +124,34 @@ int OutputValidateDB::init()
     return OK;
 }
 
-/* Produce an output result-string for examined file */
-void OutputValidateDB::makePartialOut(
+/* Produce an output result string for examined file */
+void OutputValidateDB::makePartialOutput(
     std::string &digest, std::string &name, std::stringstream &str)
 {
-    evaluateData(digest, name, str);
-    str << name << "," << digest << "," << fileName.get() << "," << fileDigest.get();
+    int status = evaluateData(digest, name);
+    if (status == WARNING && hasExactMatch)
+        return;
+
+    str << enumerateStatus(status) << name << ";" << digest << ";" << fileName.get() << ";" << fileDigest.get();
 
     for (auto &time : timestamps)
-        str << "," << time.day << "." << time.month << "." << time.year << " "
+        str << ";" << time.day << "." << time.month << "." << time.year << " "
             << time.hour << ":" << time.minute << ":" << time.second;
 
-    str << "," << fileType.get();
+    str << ";" << fileType.get();
 
     for (auto &info : versionInfo)
-        str << "," << info.get();
+        str << ";" << info.get();
+    str << "\n";
+}
+
+/* Produce an output result string for unknown file */
+void OutputValidateDB::makeUnknownOutput(
+    std::string &digest, std::string &name, std::stringstream &str)
+{
+    str << "unknown;" << name << ";" << digest;
+    for(int i = 0; i < MAX_ATTR_COUNT; i++)
+        str << ";";
     str << "\n";
 }
 
