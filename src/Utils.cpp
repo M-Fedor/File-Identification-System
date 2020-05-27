@@ -100,7 +100,7 @@ void resetCursor()
 
 #if defined(_WIN32)
 /* Converts ANSI-Code-Page encoded string to UTF16. */
-std::wstring MultiByteToUTF16(std::string &inStr, int encoding)
+std::wstring MultiByteToUTF16(std::string inStr, int encoding)
 {
     std::wstring outStr;
     if (inStr.empty())
