@@ -56,6 +56,9 @@ int executeInScannerMode()
     std::shared_ptr<ParallelExecutor> exec;
 
     inScanner->setEnableDataStreams(enableDataStreams);
+#if defined(__linux__)
+    inScanner->setExternRootDirectories(externRootDirectories);
+#endif
 
     for (unsigned int i = 0; i < nCores; i++)
         hashAlgList.emplace_back(new SHA2());
@@ -110,6 +113,18 @@ void getInputOpt()
                 std::getline(std::cin, rootDir);
             } while (rootDir.size() == 0);
             rootDirectories.push_back(normalizeInputPath(rootDir));
+
+#if defined(__linux__)
+            (std::cout << "\nIf you are analyzing external mounted FS, you need to specify root-of-search in that FS as well, "
+                       << "so we can recognize paths correctly in database as if the original FS was observed.\n"
+                       << "Otherwise just go for the default.\n\n").flush();
+            (std::cout << "Original FS root-of-search directory [" << rootDirectories.back() << "]: ").flush();
+            std::getline(std::cin, rootDir);
+            if (rootDir.size() == 0)
+                rootDir = rootDirectories.back();
+            externRootDirectories.push_back(normalizeInputPath(rootDir));
+#endif
+
             do
             {
                 (std::cout << "Want to specify another directory? [y/n]: ").flush();

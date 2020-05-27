@@ -35,6 +35,7 @@ std::string password;
 std::string inputFileName;
 std::string outputFileName;
 std::string regexTarget;
+std::vector<std::string> externRootDirectories;
 std::vector<std::string> rootDirectories;
 unsigned int dbPort;
 unsigned int nCores;

@@ -44,10 +44,16 @@ private:
   std::vector<std::string> rootDirectories;
 
 #if defined(__linux__)
+public:
+  void setExternRootDirectories(std::vector<std::string> &rootDirectories);
+
+private:
   char *currentPosition;
   ssize_t attrSize;
   std::string currentPathName;
   std::unique_ptr<char[]> attr;
+  std::vector<std::string> externAbsolutePaths;
+  std::vector<std::string> externRootDirectories;
   struct stat buffer;
 #elif defined(_WIN32)
   bool getFirstAlternateStream(std::string &pathName);

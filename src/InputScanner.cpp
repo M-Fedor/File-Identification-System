@@ -32,6 +32,14 @@ InputScanner::~InputScanner()
 /* Set control flag for NTFS alternate data streams processing */
 void InputScanner::setEnableDataStreams(bool enable) { enableDataStreams = enable; }
 
+#if defined(__linux__)
+/* Set root-of-search as if the original external file system was observed */
+void InputScanner::setExternRootDirectories(std::vector<std::string> &rootDirectories)
+{
+    this->externRootDirectories = std::move(rootDirectories);
+}
+#endif
+
 /* Enumerates Alternate Data Stream based on data extracted by corresponding hasAlternateStream() call.
 Fills its open file handle and full name respectively into function parameters, prepares new data 
 associated with next Alternate Data Stream for subsequent call */
@@ -82,10 +90,17 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
                                 std::ostringstream() << "Close directory " << absolutePaths.back().data()));
         directoryStreams.pop_back();
         absolutePaths.pop_back();
+#if defined(__linux__)
+        externAbsolutePaths.pop_back();
+#endif
         return !directoryStreams.empty() ? findNextFDRec(fDescriptor, pathName) : UNDEFINED;
     }
 
     std::string path = absolutePaths.back();
+#if defined(__linux__)
+    std::string externPath = externAbsolutePaths.back();
+#endif
+
     if (isDirectory(path.append(dirContent->d_name)))
     {
         if (!std::strcmp(dirContent->d_name, ".") || !std::strcmp(dirContent->d_name, ".."))
@@ -97,6 +112,10 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
                                        std::ostringstream() << "Open directory " << path.data()));
         directoryStreams.push_back(dirStream);
         absolutePaths.push_back(std::move(path));
+#if defined(__linux__)
+        externAbsolutePaths.push_back(std::move(externPath.append(dirContent->d_name).append(DEFAULT_SEPARATOR)));
+#endif
+
         if (hasAlternateStreamDir(absolutePaths.back()))
             return enumerateNextAlternateStream(fDescriptor, pathName);
         return findNextFDRec(fDescriptor, pathName);
@@ -110,7 +129,7 @@ int InputScanner::findNextFDRec(std::ifstream &fDescriptor, std::string &pathNam
 
         hasAlternateStreamFile(path);
 #if defined(__linux__)
-        pathName = std::move(path);
+        pathName = std::move(externPath.append(dirContent->d_name));
 #elif defined(_WIN32)
         // No other suitable way for ANSI-CP to UTF8 conversion supported by WINAPI these days
         pathName = std::move(UTF16ToMultiByte(MultiByteToUTF16(path, CP_THREAD_ACP), CP_UTF8));
@@ -229,6 +248,10 @@ int InputScanner::init()
     {
         directoryStreams.push_back(dirStream);
         absolutePaths.push_back(std::move(path));
+#if defined(__linux__)
+        externAbsolutePaths.push_back(std::move(externRootDirectories.back()));
+        externRootDirectories.pop_back();
+#endif
         return OK;
     }
     return UNDEFINED;
