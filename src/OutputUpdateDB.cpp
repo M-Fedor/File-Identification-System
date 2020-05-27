@@ -8,8 +8,8 @@ OutputUpdateDB::OutputUpdateDB(DBConnection &conn)
 {
     connection = std::move(conn);
 
-    defaultStr.reset(new char[strlen("Unknown") + 1]);
-    std::strncpy(defaultStr.get(), "Unknown", strlen("Unknown") + 1);
+    defaultStr.reset(new char[std::strlen("Unknown") + 1]);
+    std::strncpy(defaultStr.get(), "Unknown", std::strlen("Unknown") + 1);
 
     versionAttributes = std::vector<LPCSTR>{"CompanyName", "ProductName", "ProductVersion",
                                             "FileVersion", "FileDescription"};
@@ -28,15 +28,20 @@ OutputUpdateDB::~OutputUpdateDB() {}
 int OutputUpdateDB::getFileInfo(std::string &name)
 {
     DWORD dwHandle;
+    std::wstring unicodeName = std::move(MultiByteToUTF16(name, CP_UTF8));
 
-    if (_stat64(name.data(), &buffer))
-        return printErr(errno, "Get _stat64 file info");
+    if (_wstat64(unicodeName.data(), &buffer))
+    {
+        buffer.st_ctime = buffer.st_mtime = 1;
+        printErr(errno, static_cast<std::ostringstream &>(
+                            std::ostringstream() << "Get _stat64 file info for " << name.data()));
+    }
 
-    verSize = GetFileVersionInfoSizeA(name.data(), &dwHandle);
+    verSize = GetFileVersionInfoSizeW(unicodeName.data(), &dwHandle);
     if (!verSize)
         return FAIL;
     verInfo.reset(new char[verSize]);
-    if (!GetFileVersionInfoA(name.data(), dwHandle, verSize, (LPVOID)verInfo.get()))
+    if (!GetFileVersionInfoW(unicodeName.data(), dwHandle, verSize, (LPVOID)verInfo.get()))
         return FAIL;
 
     getType();
@@ -106,8 +111,8 @@ int OutputUpdateDB::getOSVersion()
     else
         return printFailed("Get OS version");
 
-    osVerStr.reset(new char[strlen(osVersion) + 1]);
-    std::strncpy(osVerStr.get(), osVersion, strlen(osVersion) + 1);
+    osVerStr.reset(new char[std::strlen(osVersion) + 1]);
+    std::strncpy(osVerStr.get(), osVersion, std::strlen(osVersion) + 1);
     versionInfo[5] = osVerStr.get();
 
     return OK;
@@ -118,10 +123,7 @@ int OutputUpdateDB::getType()
 {
     if (!VerQueryValue(
             (LPVOID)verInfo.get(), TEXT("\\"), (LPVOID *)&fixedVerInfo, (PUINT)&verSize))
-    {
-        fileType = "Unknown";
         return FAIL;
-    }
 
     switch (fixedVerInfo->dwFileType)
     {
@@ -188,11 +190,15 @@ int OutputUpdateDB::insertData(std::string &digest, std::string &name)
 {
     std::unique_ptr<char[]> digestStr(new char[digest.size() + 1]);
     std::unique_ptr<char[]> nameStr(new char[name.size() + 1]);
-    std::unique_ptr<char[]> typeStr(new char[fileType.size() + 1]);
+    std::shared_ptr<char[]> typeStr(new char[fileType.size() + 1]);
 
     std::strncpy(digestStr.get(), digest.data(), digest.size() + 1);
     std::strncpy(nameStr.get(), name.data(), name.size() + 1);
-    std::strncpy(typeStr.get(), fileType.data(), fileType.size() + 1);
+
+    if (!fileType.empty())
+        std::strncpy(typeStr.get(), fileType.data(), fileType.size() + 1);
+    else
+        typeStr = defaultStr;
 
     std::unique_ptr<char[]> productVerStr, fileVerStr;
     if (!productVerHelperStr.empty())
@@ -218,6 +224,7 @@ int OutputUpdateDB::insertData(std::string &digest, std::string &name)
         nameStr.get(), buffer.st_ctime, buffer.st_mtime, digestStr.get(), typeStr.get(), versionInfo);
 
     productVerHelperStr.clear();
+    fileType.clear();
     fileVerHelperStr.clear();
     for (int i = 0; i < VERSION_INFO_ATTR_COUNT - 1; i++)
         versionInfo[i] = NULL;
@@ -233,7 +240,7 @@ int OutputUpdateDB::outputData(std::string &digest, std::string &name)
 }
 
 /* Print error message in common format along with specific error description */
-int OutputUpdateDB::printErr(int errNum, const char *errInfo)
+int OutputUpdateDB::printErr(int errNum, const std::ostringstream &errInfo)
 {
     printFailed(errInfo);
     std::cerr << " - " << strerror(errNum) << "\n";

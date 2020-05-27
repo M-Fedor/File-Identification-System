@@ -100,27 +100,27 @@ void resetCursor()
 
 #if defined(_WIN32)
 /* Converts ANSI-Code-Page encoded string to UTF16. */
-std::wstring MultiByteToUTF16(std::string &inStr)
+std::wstring MultiByteToUTF16(std::string &inStr, int encoding)
 {
     std::wstring outStr;
     if (inStr.empty())
         return outStr;
 
     int outStrSize = MultiByteToWideChar(
-        CP_THREAD_ACP, MB_ERR_INVALID_CHARS, inStr.data(), inStr.size(), NULL, 0);
+        encoding, MB_ERR_INVALID_CHARS, inStr.data(), inStr.size(), NULL, 0);
     if (!outStrSize)
     {
         std::ostringstream stream;
-        stream << "Convert ANSI to UTF16: \"" << inStr << "\" (code " << GetLastError() << ")";
+        stream << "Convert MultiByte to UTF16: \"" << inStr << "\" (code " << GetLastError() << ")";
         printFailed(stream);
         return outStr;
     }
     outStr.resize(outStrSize);
     if (!MultiByteToWideChar(
-            CP_THREAD_ACP, MB_ERR_INVALID_CHARS, inStr.data(), inStr.size(), &outStr[0], outStrSize))
+            encoding, MB_ERR_INVALID_CHARS, inStr.data(), inStr.size(), &outStr[0], outStrSize))
     {
         std::ostringstream stream;
-        stream << "Convert ANSI to UTF16: \"" << inStr << "\" (code " << GetLastError() << ")";
+        stream << "Convert MultiByte to UTF16: \"" << inStr << "\" (code " << GetLastError() << ")";
         printFailed(stream);
         return std::wstring();
     }
@@ -129,27 +129,27 @@ std::wstring MultiByteToUTF16(std::string &inStr)
 }
 
 /* Converts UTF16 encoded string to UTF8 one. */
-std::string UTF16ToUTF8(std::wstring inStr)
+std::string UTF16ToMultiByte(std::wstring inStr, int encoding)
 {
     std::string outStr;
     if (inStr.empty())
         return outStr;
 
     int outStrSize = WideCharToMultiByte(
-        CP_UTF8, WC_ERR_INVALID_CHARS, inStr.data(), inStr.size(), NULL, 0, NULL, NULL);
+        encoding, (encoding == CP_UTF8) ? WC_ERR_INVALID_CHARS : 0, inStr.data(), inStr.size(), NULL, 0, NULL, NULL);
     if (!outStrSize)
     {
         std::wostringstream stream;
-        stream << L"Convert UTF16 to UTF8: \"" << inStr << L"\" (code " << GetLastError() << L")";
+        stream << L"Convert UTF16 to MultiByte: \"" << inStr << L"\" (code " << GetLastError() << L")";
         printFailed(stream);
         return outStr;
     }
     outStr.resize(outStrSize);
     if (!WideCharToMultiByte(
-            CP_UTF8, WC_ERR_INVALID_CHARS, inStr.data(), inStr.size(), &outStr[0], outStrSize, NULL, NULL))
+            encoding, (encoding == CP_UTF8) ? WC_ERR_INVALID_CHARS : 0, inStr.data(), inStr.size(), &outStr[0], outStrSize, NULL, NULL))
     {
         std::wostringstream stream;
-        stream << L"Convert UTF16 to UTF8: \"" << inStr << L"\" (code " << GetLastError() << L")";
+        stream << L"Convert UTF16 to MultiByte: \"" << inStr << L"\" (code " << GetLastError() << L")";
         printFailed(stream);
         return std::string();
     }
