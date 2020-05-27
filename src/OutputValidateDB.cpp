@@ -54,16 +54,16 @@ const char *OutputValidateDB::evaluateStatus(int status)
     switch (status) 
     {
         case VALID:
-            statusStr = "valid,";
+            statusStr = "valid;";
             break;
         case WARNING:
-            statusStr = "warning,";
+            statusStr = "warning;";
             break;
         case SUSPICIOUS:
-            statusStr = "suspicious,";
+            statusStr = "suspicious;";
             break;
         default:
-            statusStr = "unknown,";
+            statusStr = "unknown;";
     }
 
     return statusStr;
@@ -100,9 +100,9 @@ int OutputValidateDB::formatData(std::string &digest, std::string &name, std::st
 
     if (resultNotFound)
     {
-        outputStr << "unknown," << name << "," << digest;
+        outputStr << "unknown;" << name << ";" << digest;
         for(int i = 0; i < MAX_ATTR_COUNT; i++)
-            outputStr << ",";
+            outputStr << ";";
         outputStr << "\n";
     }
 
@@ -144,16 +144,16 @@ void OutputValidateDB::makePartialOut(
     if (status == WARNING && hasExactMatch)
         return;
 
-    str << evaluateStatus(status) << name << "," << digest << "," << fileName.get() << "," << fileDigest.get();
+    str << evaluateStatus(status) << name << ";" << digest << ";" << fileName.get() << ";" << fileDigest.get();
 
     for (auto &time : timestamps)
-        str << "," << time.day << "." << time.month << "." << time.year << " "
+        str << ";" << time.day << "." << time.month << "." << time.year << " "
             << time.hour << ":" << time.minute << ":" << time.second;
 
-    str << "," << fileType.get();
+    str << ";" << fileType.get();
 
     for (auto &info : versionInfo)
-        str << "," << info.get();
+        str << ";" << info.get();
     str << "\n";
 }
 

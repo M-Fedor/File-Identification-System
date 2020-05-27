@@ -62,7 +62,7 @@ class ContentGenerator
             {
                 $status = 'error';
                 $this->result_content .= "\n\t<tr class=\"$status\">\n\t\t<td>$file_name</td>\n
-                    \t\t<td colspan=14>Found result has incorrect format. Either filename contains \",\" or you're just trying us.</td>\n";
+                    \t\t<td colspan=14>Found result has incorrect format. Either some column contains \";\" or you're just trying us.</td>\n";
             }
 
             $this->counts[$status]++;
@@ -116,7 +116,7 @@ class ContentGenerator
     private function generate_success_result() 
     {
         echo "<p class=\"info\">All files have been checked successfully. " . $this->counts['valid'] . " valid files, "
-            . $this->counts['suspicious'] . " suspisions, " . $this->counts['warning'] . " warnings, "
+            . $this->counts['suspicious'] . " suspisions, " . $this->counts['warning'] . " warnings (files with unexpected location), "
             . $this->counts['error'] ." errors and " . $this->counts['unknown'] . " unknown files were found.</p>\n";
 
         include(BASE_PATH_PREFIX . 'frontend/filters.html');
