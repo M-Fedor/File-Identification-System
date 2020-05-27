@@ -217,9 +217,15 @@ int OutputUpdateDB::insertData(std::string &digest, std::string &name)
     for (auto &info : versionInfo)
     {
         if (!info)
+        {
             info = defaultStr.get();
+            continue;
+        }
+       
+        std::string infoUnicode = std::move(UTF16ToMultiByte(MultiByteToUTF16(std::string(info), CP_THREAD_ACP), CP_UTF8));
+        std::strncpy(info, infoUnicode.data(), infoUnicode.size() + 1);
     }
-
+    
     int rc = connection.executeInsert(
         nameStr.get(), buffer.st_ctime, buffer.st_mtime, digestStr.get(), typeStr.get(), versionInfo);
 
