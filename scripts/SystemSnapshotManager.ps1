@@ -4,7 +4,7 @@ $confFileFis = "$projectPath\conf\FileIdentificationSystem.conf"
 $confFileMgr = "$projectPath\conf\SystemSnapshotManager.conf"
 
 # Evaluate user parameters
-function printHelp() {
+function Print-Help() {
     Write-Output "System Snapshot Manager v0.1`n
                   Usage: SystemSnapshotManager [options]
                   Options:
@@ -17,14 +17,14 @@ function printHelp() {
 $option = $args[0]
 switch ($option) {
     ""                  { break }
-    ("-h" -or "--help") { printHelp 
+    ("-h" -or "--help") { Print-Help 
                         exit }
     "--turn-off"        { Set-Content -Path $confFileMgr -Value 0 
                         exit }
     "--turn-on"         { Set-Content -Path $confFileMgr -Value 1 
                         exit }
     
-    default             { printHelp 
+    default             { Print-Help 
                         exit }
 }
 
@@ -65,6 +65,11 @@ if ($phase -eq 1) {
         exit 
     }
 
+    if (Get-Content -Path $confFileMgr -eq 0) {
+        Add-Content -Path $logFile -Value "Process stopped by user configuration. Exiting without poweroff!`n`n"
+        exit
+    }
+
     $phase++
     Set-Content -Path $confFileMgr -Value $phase
     if ($exitCode -eq 2) {
@@ -85,6 +90,11 @@ if ($phase -eq 2) {
         Add-Content -Path $logFile -Value "`n"
     }
 
+    if (Get-Content -Path $confFileMgr -eq 0) {
+        Add-Content -Path $logFile -Value "Process stopped by user configuration. Exiting without poweroff!`n`n"
+        exit
+    }
+
     $phase++
     Set-Content -Path $confFileMgr -Value $phase
     Add-Content -Path $logFile -Value "Phase $($phase - 1)`: DONE!`n"
@@ -97,9 +107,22 @@ $exitCode = $LASTEXITCODE
 
 Add-Content -Path $logFile -Value "Exited with code $exitCode"
 if ($exitCode -eq 0) {
-    Add-Content -Path $logFile -Value "Phase 3: DONE!`n`n"
-    Set-Content -Path $confFileMgr -Value 1
+    Add-Content -Path $logFile -Value "Phase 3: DONE!`n"
+} else {
+    Add-Content -Path $logFile -Value "Phase 3: FAILED!`n"
+}
+
+Add-Content -Path $logFile -Value "Turning off the computer in ONE minute!"
+Start-Sleep -Seconds 60
+
+if (Get-Content -Path $confFileMgr -eq 0) {
+    Add-Content -Path $logFile -Value "Process stopped by user configuration. Exiting without poweroff!`n`n"
     exit
 }
-Add-Content -Path $logFile -Value "Phase 3: FAILED!`n`n"
-exit
+
+if ($exitCode -eq 0) {
+    Set-Content -Path $confFileMgr -Value 1
+} 
+
+Add-Content -Path $logFile -Value "Turning off the computer!`n`n"
+Stop-Computer -Force
