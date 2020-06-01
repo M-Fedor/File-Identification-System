@@ -32,8 +32,8 @@ File-Identification-System.exe: src/FileIdentificationSystem.cpp src/Input.cpp s
 	src/HashAlgorithm.cpp src/SHA2.cpp\
 	src/DBConnection.cpp src/Output.cpp src/OutputOffline.cpp src/OutputUpdateDB.cpp src/OutputValidateDB.cpp\
 	src/ParallelExecutor.cpp src/Utils.cpp
-	gcc -o $@ $? -I $(CRYPTOPP_INCLUDE_DIR) -I $(MYSQL_INCLUDE_DIR) -L $(CRYPTOPP_LIB_DIR) -lcryptopp -L $(MYSQL_LIB_DIR)\
-    -llibmariadb -lpthread -lstdc++ -std=c++11 -lversion -pedantic -Wall -Wextra
+	gcc -o $@ $? -I $(CRYPTOPP_INCLUDE_DIR) -I $(MYSQL_INCLUDE_DIR) -L $(CRYPTOPP_LIB_DIR) -Wl,-Bstatic -lcryptopp \
+	-L $(MYSQL_LIB_DIR) -llibmariadb -lpthread -lstdc++ -std=c++11 -Wl,-Bdynamic -lversion -pedantic -Wall -Wextra
 
 .PHONY: clean install install-web
 
