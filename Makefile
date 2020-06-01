@@ -33,7 +33,7 @@ File-Identification-System.exe: src/FileIdentificationSystem.cpp src/Input.cpp s
 	src/DBConnection.cpp src/Output.cpp src/OutputOffline.cpp src/OutputUpdateDB.cpp src/OutputValidateDB.cpp\
 	src/ParallelExecutor.cpp src/Utils.cpp
 	gcc -O2 -o $@ $? -I $(CRYPTOPP_INCLUDE_DIR) -I $(MYSQL_INCLUDE_DIR) -L $(CRYPTOPP_LIB_DIR) -Wl,-Bstatic -lcryptopp \
-	-L $(MYSQL_LIB_DIR) -llibmariadb -lpthread -lstdc++ -std=c++11 -Wl,-Bdynamic -lversion -pedantic -Wall -Wextra
+	-lstdc++ -lpthread -L ${MYSQL_LIB_DIR} -Wl,-Bdynamic -llibmariadb -lversion -std=c++11 -pedantic -Wall -Wextra
 
 .PHONY: clean install install-web
 
